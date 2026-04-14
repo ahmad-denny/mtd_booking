@@ -58,7 +58,7 @@
 
 <div class="container">
     <div class="header-title">
-        <h2 id="mainHeader">M-Booking Performance Region Sumatera</h2>
+        <h2 id="mainHeader">Booking Performance Region Sumatera</h2>
         <span id="dateDisplay" class="as-of-date"></span>
     </div>
     
@@ -173,11 +173,13 @@ function filterAndRender() {
     const statusVal = document.getElementById('ActivityStatusFilter').value;
     const headerElem = document.getElementById('mainHeader');
 
-    // Update Judul Dinamis
-    if (!branchVal) {
+    // LOGIKA UPDATE JUDUL DINAMIS
+    if (!branchVal && !officeVal) {
         headerElem.innerText = "Top 10 Booking Performance Region Sumatera";
-    } else {
-        headerElem.innerText = "Booking Performance Region Sumatera";
+    } else if (branchVal && !officeVal) {
+        headerElem.innerText = "Booking Performance " + branchVal;
+    } else if (branchVal && officeVal) {
+        headerElem.innerText = "Booking Performance " + branchVal + " - " + officeVal;
     }
 
     const filtered = tableData.filter(row => {
