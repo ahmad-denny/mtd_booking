@@ -173,7 +173,6 @@ function filterAndRender() {
     const statusVal = document.getElementById('ActivityStatusFilter').value;
     const headerElem = document.getElementById('mainHeader');
 
-    // LOGIKA UPDATE JUDUL DINAMIS
     if (!branchVal && !officeVal) {
         headerElem.innerText = "Top 10 Booking Performance Region Sumatera";
     } else if (branchVal && !officeVal) {
@@ -208,14 +207,12 @@ function filterAndRender() {
         let top10 = entries.slice(0, 10);
         chartLabels = top10.map(e => e[0]);
         chartValues = top10.map(e => Math.round(e[1] / 1000000));
-        
-        chartLabels.unshift("Total Region Sumatera");
+        chartLabels.unshift("TOTAL REGION SUMATERA");
         chartValues.unshift(Math.round(rawTotalRegion / 1000000));
     } else {
         chartLabels = entries.map(e => e[0]);
         chartValues = entries.map(e => Math.round(e[1] / 1000000));
-        
-        chartLabels.unshift("Total " + branchVal);
+        chartLabels.unshift("TOTAL " + branchVal.toUpperCase());
         chartValues.unshift(Math.round(rawTotalRegion / 1000000));
     }
 
@@ -250,7 +247,8 @@ function drawChart(labels, values, isTop10) {
             datasets: [{
                 label: datasetLabel,
                 data: values,
-                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#4E337E' : '#36A2EB'),
+                // WARNA BAR: Total dibuat lebih gelap (#2E1A47), lainnya biru muda (#36A2EB)
+                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
                 barPercentage: 0.7
             }]
         },
@@ -262,16 +260,38 @@ function drawChart(labels, values, isTop10) {
             scales: { 
                 x: { 
                     display: false, 
-                    grid: { display: false },
-                    title: { display: false, text: 'Dalam Jutaan Rupiah', font: { weight: 'bold' } } 
+                    grid: { display: false }
                 }, 
-                y: { grid: { display: false } } 
+                y: { 
+                    grid: { display: false },
+                    ticks: {
+                        // Teks label Y-Axis (Nama Kantor) dibuat tebal jika mengandung kata "TOTAL"
+                        font: (context) => {
+                            const label = context.tick.label || '';
+                            return {
+                                weight: label.toString().includes('TOTAL') ? 'bold' : 'normal',
+                                size: 12
+                            };
+                        }
+                    }
+                } 
             },
             plugins: {
-                legend: { display: false, position: 'top' },
+                legend: { display: false },
                 datalabels: {
-                    anchor: 'end', align: 'right', offset: 5, color: '#000',
-                    font: { weight: 'bold', size: 11 },
+                    anchor: 'end', 
+                    align: 'right', 
+                    offset: 5, 
+                    color: '#000',
+                    // Teks angka di chart dibuat tebal (bold) jika labelnya mengandung kata "TOTAL"
+                    font: (context) => {
+                        const label = context.chart.data.labels[context.dataIndex];
+                        const isTotal = label.toString().includes('TOTAL');
+                        return { 
+                            weight: isTotal ? 'bold' : 'normal', 
+                            size: isTotal ? 13 : 11 
+                        };
+                    },
                     formatter: (v) => v.toLocaleString('id-ID')
                 }
             }
