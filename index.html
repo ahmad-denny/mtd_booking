@@ -3,23 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking Performance Sumatera</title>
+    <title>Booking Performance Region Sumatera</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f4; padding: 20px; margin: 0; }
-        .container { background: white; padding: 20px; border-radius: 12px; max-width: 1200px; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { color: white; background: linear-gradient(90deg, #6a1b9a, #8e24aa); padding: 15px; border-radius: 8px; text-align: center; }
-        .filter-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; }
-        select { padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex: 1; min-width: 150px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #28a745; color: white; }
-        button:hover { background: #218838; }
-        #chart-container { position: relative; width: 100%; margin-top: 20px; }
-        .table-container { margin-top: 20px; overflow-x: auto; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #6a1b9a; color: white; padding: 12px; border: 1px solid #ddd; position: sticky; top: 0; }
-        td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        tr:nth-child(even) { background: #f9f9f9; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f2f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        #chart-container {
+            position: relative;
+            width: 100%;
+            margin: 20px auto;
+            min-height: 300px; 
+        }
+
+        h2 {
+            color: white;
+            background: linear-gradient(90deg, #6a1b9a, #8e24aa);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 0;
+        }
+
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            color: white;
+        }
+        .reset-btn { background: #28a745; }
+        .reset-btn:hover { background: #218838; }
+        .back-btn { background: #dc3545; }
+        .back-btn:hover { background: #c82333; }
+        .print-btn { background: #6f42c1; }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #6a1b9a;
+            color: white;
+            padding: 12px 8px;
+            position: sticky;
+            top: 0;
+            border: 1px solid #5e1689;
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid #eee;
+            text-align: left;
+        }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        @media screen and (max-width: 768px) {
+            .filter-container { flex-direction: column; align-items: stretch; }
+            select, .btn { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -28,9 +117,21 @@
     <h2>Booking Performance Region Sumatera</h2>
     
     <div class="filter-container">
-        <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
-        <select id="OfficeFilter"><option value="">Semua Office</option></select>
-        <button onclick="resetFilter()">Reset</button>
+        <select id="BranchFilter">
+            <option value="">Semua Main Branch</option>
+        </select>
+        <select id="OfficeFilter">
+            <option value="">Semua Office</option>
+        </select>
+        <select id="ActivityStatusFilter">
+            <option value="all">Semua Aktifitas</option>
+            <option value="active">Ada Aktifitas</option>
+            <option value="inactive">Tidak Ada Aktifitas</option>
+        </select>
+        
+        <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
+        <button class="btn print-btn" onclick="printTable()">Print</button>
+        <button class="btn back-btn" onclick="openPage()">M-Direct</button>
     </div>
 
     <div id="chart-container">
@@ -38,109 +139,122 @@
     </div>
 
     <div class="table-container">
-        <table>
-            <thead><tr id="tableHead"></tr></thead>
+        <table id="dataTable">
+            <thead>
+                <tr id="tableHead"></tr>
+            </thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-let tableData = [];
+const ChartDataLabels = window.ChartDataLabels;
 let myChart = null;
+let tableData = [];
 
-// --- FUNGSI MEMBERSIHKAN KOMA RIBUAN ---
+// --- FUNGSI FIX ANGKA: Menghapus koma ribuan ---
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
     if (!val || val === "-" || val === "") return 0;
-    // Menghapus koma agar "1,038,390,113" menjadi "1038390113"
     let cleaned = val.toString().replace(/,/g, '');
     return parseFloat(cleaned) || 0;
 }
 
-// --- AMBIL DATA DARI JSON ---
 document.addEventListener('DOMContentLoaded', () => {
     fetch('Dataset.json')
         .then(res => res.json())
         .then(data => {
             tableData = data;
-            initDashboard();
+            initializeDashboard();
         })
         .catch(err => {
-            console.error("Gagal memuat Dataset.json:", err);
-            alert("Dataset.json tidak ditemukan atau format salah.");
+            console.error("Gagal load JSON:", err);
         });
 });
 
-function initDashboard() {
+function initializeDashboard() {
     if (tableData.length === 0) return;
 
-    // Header Tabel
+    // Build Table Header
     const columns = Object.keys(tableData[0]);
-    document.getElementById('tableHead').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
+    document.getElementById('tableHead').innerHTML = columns.map(col => `<th>${col}</th>`).join('');
+
+    // Init Filters
+    updateMainFilters();
+
+    // Event Listeners
+    document.getElementById('BranchFilter').addEventListener('change', (e) => {
+        updateOfficeFilter(e.target.value);
+        filterAndRender();
+    });
+    document.getElementById('OfficeFilter').addEventListener('change', filterAndRender);
+    document.getElementById('ActivityStatusFilter').addEventListener('change', filterAndRender);
     
-    // Isi Dropdown Branch secara otomatis dari data JSON
+    filterAndRender();
+}
+
+function updateMainFilters() {
     const branches = [...new Set(tableData.map(d => d['Main Branch']))].sort();
     const branchSelect = document.getElementById('BranchFilter');
     branchSelect.innerHTML = '<option value="">Semua Main Branch</option>' + 
-        branches.map(b => `<option value="${b}">${b}</option>`).join('');
+        branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
-    // Event Listener
-    document.getElementById('BranchFilter').addEventListener('change', function() {
-        updateOfficeFilter(this.value);
-        updateUI();
-    });
-    document.getElementById('OfficeFilter').addEventListener('change', updateUI);
-    
-    updateUI();
+    updateOfficeFilter("");
 }
 
-function updateOfficeFilter(selectedBranch) {
+function updateOfficeFilter(branch) {
     const officeSelect = document.getElementById('OfficeFilter');
-    const filteredOffices = tableData
-        .filter(d => !selectedBranch || d['Main Branch'] === selectedBranch)
-        .map(d => d['Office']);
+    const filteredData = tableData.filter(d => !branch || d['Main Branch'] === branch);
+    const offices = [...new Set(filteredData.map(d => d['Office']))].sort();
     
-    const offices = [...new Set(filteredOffices)].sort();
     officeSelect.innerHTML = '<option value="">Semua Office</option>' + 
-        offices.map(o => `<option value="${o}">${o}</option>`).join('');
+        offices.map(v => `<option value="${v}">${v}</option>`).join('');
 }
 
-function updateUI() {
+function filterAndRender() {
     const branchVal = document.getElementById('BranchFilter').value;
     const officeVal = document.getElementById('OfficeFilter').value;
+    const statusVal = document.getElementById('ActivityStatusFilter').value;
 
-    const filtered = tableData.filter(d => 
-        (!branchVal || d['Main Branch'] === branchVal) && 
-        (!officeVal || d['Office'] === officeVal)
-    );
-
-    // Proses data untuk Chart
-    const map = {};
-    filtered.forEach(d => {
-        const val = cleanNumber(d['Total']);
-        map[d['Office']] = (map[d['Office']] || 0) + val;
+    const filtered = tableData.filter(row => {
+        const matchBranch = !branchVal || row['Main Branch'] === branchVal;
+        const matchOffice = !officeVal || row['Office'] === officeVal;
+        const totalNum = cleanNumber(row['Total']);
+        const matchStatus = statusVal === 'all' || 
+                           (statusVal === 'active' && totalNum > 0) || 
+                           (statusVal === 'inactive' && totalNum === 0);
+        return matchBranch && matchOffice && matchStatus;
     });
 
-    let entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    // Update Chart
+    const officeMap = {};
+    filtered.forEach(row => {
+        const val = cleanNumber(row['Total']);
+        officeMap[row['Office']] = (officeMap[row['Office']] || 0) + val;
+    });
+
+    let entries = Object.entries(officeMap).sort((a, b) => b[1] - a[1]);
     let labels = entries.map(e => e[0]);
     let values = entries.map(e => e[1]);
 
-    // Tambahkan TOTAL Branch jika ada branch yang dipilih
     if (branchVal && values.length > 0) {
         labels.unshift("TOTAL " + branchVal);
         values.unshift(values.reduce((a, b) => a + b, 0));
     }
 
-    renderChart(labels, values);
-    renderTable(filtered);
+    drawChart(labels, values);
+    
+    // Update Table
+    document.getElementById('tableBody').innerHTML = filtered.map(row => 
+        `<tr>${Object.values(row).map(v => `<td>${v}</td>`).join('')}</tr>`
+    ).join('');
 }
 
-function renderChart(labels, values) {
+function drawChart(labels, values) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
 
-    // Tinggi chart dinamis agar tidak sesak
     document.getElementById('chart-container').style.height = (labels.length * 40 + 120) + "px";
 
     myChart = new Chart(ctx, {
@@ -158,19 +272,13 @@ function renderChart(labels, values) {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            layout: { padding: { right: 150 } }, // Ruang agar angka Miliar tidak terpotong
-            scales: { 
-                x: { display: false }, 
-                y: { grid: { display: false } } 
-            },
+            layout: { padding: { right: 150 } },
+            scales: { x: { display: false }, y: { grid: { display: false } } },
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    anchor: 'end',
-                    align: 'right',
-                    offset: 10,
-                    color: '#000',
-                    font: { weight: 'bold', size: 11 },
+                    anchor: 'end', align: 'right', offset: 10, color: '#000',
+                    font: { weight: 'bold' },
                     formatter: (v) => v.toLocaleString('id-ID')
                 }
             }
@@ -178,17 +286,15 @@ function renderChart(labels, values) {
     });
 }
 
-function renderTable(data) {
-    document.getElementById('tableBody').innerHTML = data.map(row => 
-        `<tr>${Object.values(row).map(v => `<td>${v}</td>`).join('')}</tr>`
-    ).join('');
-}
-
 function resetFilter() {
     document.getElementById('BranchFilter').value = "";
+    document.getElementById('ActivityStatusFilter').value = "all";
     updateOfficeFilter("");
-    updateUI();
+    filterAndRender();
 }
+
+function printTable() { window.print(); }
+function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
 </script>
 </body>
 </html>
