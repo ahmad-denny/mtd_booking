@@ -58,7 +58,7 @@
 
 <div class="container">
     <div class="header-title">
-        <h2 id="mainHeader">Booking Performance Region Sumatera</h2>
+        <h2 id="mainHeader">Top 10 Booking Performance Region Sumatera</h2>
         <span id="dateDisplay" class="as-of-date"></span>
     </div>
     
@@ -146,12 +146,18 @@ function updateMainFilters() {
     const branchSelect = document.getElementById('BranchFilter');
     branchSelect.innerHTML = '<option value="">Semua Main Branch</option>' + 
         branches.map(v => `<option value="${v}">${v}</option>`).join('');
-    updateOfficeFilter("");
+    
+    // Inisialisasi Office Filter dengan semua data unik dari dataset
+    const allOffices = [...new Set(tableData.map(d => d['Office']))].sort();
+    const officeSelect = document.getElementById('OfficeFilter');
+    officeSelect.innerHTML = '<option value="">Semua Office</option>' + 
+        allOffices.map(v => `<option value="${v}">${v}</option>`).join('');
 }
 
 function updateOfficeFilter(branch) {
     const officeSelect = document.getElementById('OfficeFilter');
-    const filteredData = tableData.filter(d => !branch || d['Main Branch'] === branch);
+    // Jika branch tidak dipilih, tampilkan semua office unik
+    const filteredData = !branch ? tableData : tableData.filter(d => d['Main Branch'] === branch);
     const offices = [...new Set(filteredData.map(d => d['Office']))].sort();
     officeSelect.innerHTML = '<option value="">Semua Office</option>' + 
         offices.map(v => `<option value="${v}">${v}</option>`).join('');
@@ -173,14 +179,18 @@ function filterAndRender() {
     const statusVal = document.getElementById('ActivityStatusFilter').value;
     const headerElem = document.getElementById('mainHeader');
 
+    // 1. Update Judul Dinamis
     if (!branchVal && !officeVal) {
         headerElem.innerText = "Top 10 Booking Performance Region Sumatera";
     } else if (branchVal && !officeVal) {
         headerElem.innerText = "Booking Performance " + branchVal;
-    } else if (branchVal && officeVal) {
+    } else if (!branchVal && officeVal) {
+        headerElem.innerText = "Booking Performance " + officeVal;
+    } else {
         headerElem.innerText = "Booking Performance " + branchVal + " - " + officeVal;
     }
 
+    // 2. Filter data untuk Tabel
     const filtered = tableData.filter(row => {
         const matchBranch = !branchVal || row['Main Branch'] === branchVal;
         const matchOffice = !officeVal || row['Office'] === officeVal;
@@ -191,6 +201,7 @@ function filterAndRender() {
         return matchBranch && matchOffice && matchStatus;
     });
 
+    // 3. Logika Chart
     const officeMap = {};
     filtered.forEach(row => {
         const val = cleanNumber(row['Total']);
@@ -198,26 +209,43 @@ function filterAndRender() {
     });
 
     let entries = Object.entries(officeMap).sort((a, b) => b[1] - a[1]);
-    
     let chartLabels = [];
     let chartValues = [];
-    const rawTotalRegion = entries.reduce((acc, curr) => acc + curr[1], 0);
 
-    if (!branchVal) {
+    // Hitung TOTAL REGION SUMATERA (Selalu dari dataset asli tanpa filter branch/office)
+    const grandTotalSumatera = tableData.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+
+    if (!branchVal && !officeVal) {
+        // Tampilan Awal: Total Region + Top 10
         let top10 = entries.slice(0, 10);
         chartLabels = top10.map(e => e[0]);
         chartValues = top10.map(e => Math.round(e[1] / 1000000));
+        
         chartLabels.unshift("TOTAL REGION SUMATERA");
-        chartValues.unshift(Math.round(rawTotalRegion / 1000000));
-    } else {
+        chartValues.unshift(Math.round(grandTotalSumatera / 1000000));
+    } else if (branchVal && !officeVal) {
+        // Tampilan Per Branch: Total Sumatera + Total Branch + Semua Office di branch tsb
+        const branchTotal = filtered.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
         chartLabels = entries.map(e => e[0]);
         chartValues = entries.map(e => Math.round(e[1] / 1000000));
+        
         chartLabels.unshift("TOTAL " + branchVal.toUpperCase());
-        chartValues.unshift(Math.round(rawTotalRegion / 1000000));
+        chartValues.unshift(Math.round(branchTotal / 1000000));
+        
+        chartLabels.unshift("TOTAL REGION SUMATERA");
+        chartValues.unshift(Math.round(grandTotalSumatera / 1000000));
+    } else {
+        // Tampilan Per Office (atau Branch + Office): Total Sumatera + Office terpilih
+        chartLabels = entries.map(e => e[0]);
+        chartValues = entries.map(e => Math.round(e[1] / 1000000));
+        
+        chartLabels.unshift("TOTAL REGION SUMATERA");
+        chartValues.unshift(Math.round(grandTotalSumatera / 1000000));
     }
 
-    drawChart(chartLabels, chartValues, !branchVal);
+    drawChart(chartLabels, chartValues);
 
+    // 4. Update Tabel
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
         let cells = Object.entries(row).map(([key, val]) => {
@@ -230,14 +258,12 @@ function filterAndRender() {
     }).join('');
 }
 
-function drawChart(labels, values, isTop10) {
+function drawChart(labels, values) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
     
     const chartHeight = labels.length > 20 ? labels.length * 30 : labels.length * 45 + 100;
     document.getElementById('chart-container').style.height = chartHeight + "px";
-    
-    const datasetLabel = isTop10 ? 'Total Booking' : 'Total Booking';
 
     myChart = new Chart(ctx, {
         type: 'bar',
@@ -245,9 +271,7 @@ function drawChart(labels, values, isTop10) {
         data: {
             labels: labels,
             datasets: [{
-                label: datasetLabel,
                 data: values,
-                // WARNA BAR: Total dibuat lebih gelap (#2E1A47), lainnya biru muda (#36A2EB)
                 backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
                 barPercentage: 0.7
             }]
@@ -258,39 +282,24 @@ function drawChart(labels, values, isTop10) {
             maintainAspectRatio: false,
             layout: { padding: { right: 80 } },
             scales: { 
-                x: { 
-                    display: false, 
-                    grid: { display: false }
-                }, 
+                x: { display: false }, 
                 y: { 
                     grid: { display: false },
                     ticks: {
-                        // Teks label Y-Axis (Nama Kantor) dibuat tebal jika mengandung kata "TOTAL"
-                        font: (context) => {
-                            const label = context.tick.label || '';
-                            return {
-                                weight: label.toString().includes('TOTAL') ? 'bold' : 'normal',
-                                size: 12
-                            };
-                        }
+                        font: (context) => ({
+                            weight: context.tick.label.toString().includes('TOTAL') ? 'bold' : 'normal',
+                            size: 12
+                        })
                     }
                 } 
             },
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    anchor: 'end', 
-                    align: 'right', 
-                    offset: 5, 
-                    color: '#000',
-                    // Teks angka di chart dibuat tebal (bold) jika labelnya mengandung kata "TOTAL"
+                    anchor: 'end', align: 'right', offset: 5, color: '#000',
                     font: (context) => {
-                        const label = context.chart.data.labels[context.dataIndex];
-                        const isTotal = label.toString().includes('TOTAL');
-                        return { 
-                            weight: isTotal ? 'bold' : 'normal', 
-                            size: isTotal ? 13 : 11 
-                        };
+                        const isTotal = context.chart.data.labels[context.dataIndex].toString().includes('TOTAL');
+                        return { weight: isTotal ? 'bold' : 'normal', size: isTotal ? 13 : 11 };
                     },
                     formatter: (v) => v.toLocaleString('id-ID')
                 }
@@ -333,11 +342,12 @@ async function exportToExcel() {
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `Booking_Performance_${document.getElementById('BranchFilter').value || "Sumatera"}.xlsx`);
+    saveAs(new Blob([buffer]), `Booking_Performance.xlsx`);
 }
 
 function resetFilter() {
     document.getElementById('BranchFilter').value = "";
+    document.getElementById('OfficeFilter').value = "";
     document.getElementById('ActivityStatusFilter').value = "all";
     updateOfficeFilter("");
     filterAndRender();
