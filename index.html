@@ -237,7 +237,7 @@ function drawChart(labels, values, isTop10) {
     const chartHeight = labels.length > 20 ? labels.length * 30 : labels.length * 45 + 100;
     document.getElementById('chart-container').style.height = chartHeight + "px";
     
-    const datasetLabel = isTop10 ? 'Top 10 Office Booking: ' : 'Booking: ';
+    const datasetLabel = isTop10 ? 'Performance (Top 10 Office - Jutaan)' : 'Performance (Jutaan)';
 
     myChart = new Chart(ctx, {
         type: 'bar',
@@ -248,7 +248,7 @@ function drawChart(labels, values, isTop10) {
                 label: datasetLabel,
                 data: values,
                 // WARNA BAR: Total dibuat lebih gelap (#2E1A47), lainnya biru muda (#36A2EB)
-                backgroundColor: labels.map(l => l.includes('Total') ? '#2E1A47' : '#36A2EB'),
+                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
                 barPercentage: 0.7
             }]
         },
@@ -269,7 +269,7 @@ function drawChart(labels, values, isTop10) {
                         font: (context) => {
                             const label = context.tick.label || '';
                             return {
-                                weight: label.toString().includes('Total') ? 'bold' : 'normal',
+                                weight: label.toString().includes('TOTAL') ? 'bold' : 'normal',
                                 size: 12
                             };
                         }
@@ -286,7 +286,7 @@ function drawChart(labels, values, isTop10) {
                     // Teks angka di chart dibuat tebal (bold) jika labelnya mengandung kata "TOTAL"
                     font: (context) => {
                         const label = context.chart.data.labels[context.dataIndex];
-                        const isTotal = label.toString().includes('Total');
+                        const isTotal = label.toString().includes('TOTAL');
                         return { 
                             weight: isTotal ? 'bold' : 'normal', 
                             size: isTotal ? 13 : 11 
