@@ -215,30 +215,37 @@ function exportToExcel() {
     }
 
     const table = document.getElementById("dataTable");
-    const ws = XLSX.utils.table_to_sheet(table);
-
-    // --- LOGIKA AUTOFIT KOLOM ---
-    const objectMaxLength = [];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
     
-    rows.forEach((row) => {
-        row.forEach((val, i) => {
-            const columnValue = val ? val.toString() : "";
-            // Hitung panjang karakter
-            objectMaxLength[i] = Math.max(objectMaxLength[i] || 10, columnValue.length + 2);
-        });
-    });
+    // 1. Mengambil tabel ke worksheet
+    // raw: false memastikan format tampilan di web (seperti titik ribuan) ikut terbawa sebagai teks
+    const ws = XLSX.utils.table_to_sheet(table, { raw: false });
 
-    // Terapkan lebar kolom ke worksheet
-    ws['!cols'] = objectMaxLength.map(w => ({ width: w }));
+    // 2. Logika AutoFit Lebar Kolom
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const colWidths = [];
+    
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+        let maxWidth = 10; // Lebar minimal
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+            if (cell && cell.v) {
+                const len = cell.v.toString().length;
+                if (len > maxWidth) maxWidth = len;
+            }
+        }
+        colWidths.push({ wch: maxWidth + 2 }); // Tambah padding
+    }
+    ws['!cols'] = colWidths;
 
+    // 3. Membuat file Excel
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Booking Performance");
 
-    const branchName = document.getElementById('BranchFilter').value || "All Branch";
-    XLSX.writeFile(wb, `Booking ${branchName}.xlsx`);
+    // 4. Penamaan file sesuai filter
+    const branchName = document.getElementById('BranchFilter').value || "All_Branch";
+    XLSX.writeFile(wb, `Booking_${branchName}.xlsx`);
 }
-
+    
 function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
 </script>
 </body>
