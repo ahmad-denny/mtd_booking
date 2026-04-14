@@ -9,125 +9,35 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f2f5;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            width: 95%;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
-        }
-        
-        #chart-container {
-            position: relative;
-            width: 100%;
-            margin: 20px auto;
-            min-height: 300px; 
-        }
-
-        h2 {
-            color: white;
-            background: linear-gradient(90deg, #6a1b9a, #8e24aa);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 0;
-        }
-
-        .filter-container {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
-        }
-
-        select {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            outline: none;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            color: white;
-        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; margin: 0; }
+        .container { width: 95%; max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08); }
+        #chart-container { position: relative; width: 100%; margin: 20px auto; min-height: 400px; }
+        h2 { color: white; background: linear-gradient(90deg, #6a1b9a, #8e24aa); padding: 15px; border-radius: 8px; margin-top: 0; }
+        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 20px; background: #f8f9fa; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e9ecef; }
+        select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; flex: 1; min-width: 150px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; }
         .reset-btn { background: #28a745; }
         .back-btn { background: #dc3545; }
         .print-btn { background: #6f42c1; }
-
-        .table-container {
-            overflow-x: auto;
-            margin-top: 20px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        th {
-            background-color: #6a1b9a;
-            color: white;
-            padding: 12px 8px;
-            position: sticky;
-            top: 0;
-            border: 1px solid #5e1689;
-        }
-
-        td {
-            padding: 10px;
-            border: 1px solid #eee;
-            text-align: left;
-        }
+        .table-container { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background-color: #6a1b9a; color: white; padding: 12px 8px; position: sticky; top: 0; border: 1px solid #5e1689; }
+        td { padding: 10px; border: 1px solid #eee; text-align: left; }
         tr:nth-child(even) { background-color: #f9f9f9; }
-
-        @media screen and (max-width: 768px) {
-            .filter-container { flex-direction: column; }
-            select, .btn { width: 100%; }
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Booking Performance Region Sumatera - April 2026</h2>
-    
     <div class="filter-container">
-        <select id="BranchFilter">
-            <option value="">Semua Main Branch</option>
-        </select>
-        <select id="OfficeFilter">
-            <option value="">Semua Office</option>
-        </select>
+        <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
+        <select id="OfficeFilter"><option value="">Semua Office</option></select>
         <select id="ActivityStatusFilter">
             <option value="all">Semua Aktifitas</option>
             <option value="active">Ada Aktifitas</option>
             <option value="inactive">Tidak Ada Aktifitas</option>
         </select>
-        
         <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
         <button class="btn print-btn" onclick="printTable()">Print</button>
         <button class="btn back-btn" onclick="openPage()">M-Direct</button>
@@ -139,9 +49,7 @@
 
     <div class="table-container">
         <table id="dataTable">
-            <thead>
-                <tr id="tableHead"></tr>
-            </thead>
+            <thead><tr id="tableHead"></tr></thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
@@ -151,167 +59,145 @@
 const ChartDataLabels = window.ChartDataLabels;
 let myChart = null;
 let tableData = [];
-let filteredData = [];
 
-// Fungsi untuk membersihkan format angka agar bisa dijumlahkan
+// --- PERBAIKAN LOGIKA ANGKA ---
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
     if (!val || val === "-" || val === "") return 0;
-    // Hapus titik ribuan dan ganti koma desimal
-    let cleaned = val.toString().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.-]+/g, "");
-    return parseFloat(cleaned) || 0;
+    
+    let str = val.toString().trim();
+    
+    // Jika formatnya 1.165.595 (titik sebagai ribuan)
+    // Kita hilangkan semua titik agar menjadi 1165595
+    if (str.includes('.') && str.includes(',')) {
+        // Format Internasional dengan koma desimal: 1.165.595,00
+        str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes('.') && !str.includes(',')) {
+        // Asumsi titik adalah ribuan jika digit di belakang titik ada 3
+        const parts = str.split('.');
+        if (parts[parts.length - 1].length === 3) {
+            str = str.replace(/\./g, '');
+        }
+    }
+    
+    return parseFloat(str) || 0;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     fetch('Dataset.json')
         .then(res => res.json())
-        .then(data => initializeDashboard(data))
-        .catch(err => {
-            console.warn("Dataset.json tidak ditemukan, menggunakan data demo.");
-            const dummyData = [
-                {"Main Branch": "Bengkulu", "Office": "Bengkulu KM 6", "Total": "1.100.000"},
-                {"Main Branch": "Bengkulu", "Office": "Bengkulu Panorama", "Total": "1.100.000"},
-                {"Main Branch": "Medan", "Office": "Medan SM Raja", "Total": "150.000"},
-                {"Main Branch": "Palembang", "Office": "PLM Sudirman", "Total": "85.000"}
+        .then(data => {
+            tableData = data;
+            initializeDashboard();
+        })
+        .catch(() => {
+            // Contoh data untuk simulasi 2.2M
+            tableData = [
+                {"Main Branch": "BENGKULU", "Office": "JAMBI", "Total": "1.165.595"},
+                {"Main Branch": "BENGKULU", "Office": "KCP CURUP", "Total": "1.100.000"}, // Tambahan agar jadi 2.2M
+                {"Main Branch": "BENGKULU", "Office": "KCP MUARA BUNGO", "Total": "328.064"}
             ];
-            initializeDashboard(dummyData);
+            initializeDashboard();
         });
 });
 
-function initializeDashboard(data) {
-    tableData = data;
-    if (data.length > 0) {
-        const tableHead = document.getElementById('tableHead');
-        const columns = Object.keys(data[0]);
-        tableHead.innerHTML = columns.map(col => `<th>${col}</th>`).join('');
-        updateMainFilters();
+function initializeDashboard() {
+    if (tableData.length > 0) {
+        const columns = Object.keys(tableData[0]);
+        document.getElementById('tableHead').innerHTML = columns.map(col => `<th>${col}</th>`).join('');
+        
+        const branches = [...new Set(tableData.map(d => d['Main Branch']))];
+        const branchSelect = document.getElementById('BranchFilter');
+        branchSelect.innerHTML = '<option value="">Semua Main Branch</option>' + 
+            branches.sort().map(b => `<option value="${b}">${b}</option>`).join('');
     }
-
-    document.getElementById('BranchFilter').addEventListener('change', (e) => {
-        updateOfficeFilter(e.target.value);
-        filterAndSearchTable();
-    });
-    document.getElementById('OfficeFilter').addEventListener('change', filterAndSearchTable);
-    document.getElementById('ActivityStatusFilter').addEventListener('change', filterAndSearchTable);
     
-    filterAndSearchTable();
+    document.querySelectorAll('select').forEach(s => s.addEventListener('change', filterData));
+    filterData();
 }
 
-function filterAndSearchTable() {
+function filterData() {
     const branchVal = document.getElementById('BranchFilter').value;
     const officeVal = document.getElementById('OfficeFilter').value;
     const statusVal = document.getElementById('ActivityStatusFilter').value;
 
-    filteredData = tableData.filter(row => {
+    const filtered = tableData.filter(row => {
         const matchBranch = !branchVal || row['Main Branch'] === branchVal;
         const matchOffice = !officeVal || row['Office'] === officeVal;
-        const totalNum = cleanNumber(row['Total']);
-        const matchStatus = statusVal === 'all' || 
-                           (statusVal === 'active' && totalNum > 0) || 
-                           (statusVal === 'inactive' && totalNum === 0);
+        const total = cleanNumber(row['Total']);
+        const matchStatus = statusVal === 'all' || (statusVal === 'active' && total > 0) || (statusVal === 'inactive' && total === 0);
         return matchBranch && matchOffice && matchStatus;
     });
 
-    updateChartFromData(filteredData, branchVal);
-    renderTableBody(filteredData);
+    renderChart(filtered, branchVal);
+    renderTable(filtered);
 }
 
-function updateChartFromData(data, branchVal) {
-    const officeMap = new Map();
+function renderChart(data, branchVal) {
+    const officeMap = {};
     data.forEach(row => {
-        const officeName = row['Office'];
         const val = cleanNumber(row['Total']);
-        officeMap.set(officeName, (officeMap.get(officeName) || 0) + val);
+        officeMap[row['Office']] = (officeMap[row['Office']] || 0) + val;
     });
 
-    let entries = Array.from(officeMap.entries()).sort((a, b) => b[1] - a[1]);
+    let entries = Object.entries(officeMap).sort((a, b) => b[1] - a[1]);
     let labels = entries.map(e => e[0]);
     let values = entries.map(e => e[1]);
 
-    if (branchVal && values.length > 0) {
-        const totalSum = values.reduce((a, b) => a + b, 0);
-        labels.unshift(`TOTAL ${branchVal.toUpperCase()}`);
-        values.unshift(totalSum);
+    if (branchVal) {
+        const total = values.reduce((a, b) => a + b, 0);
+        labels.unshift("TOTAL " + branchVal);
+        values.unshift(total);
     }
 
-    drawChart({ labels, values });
-}
-
-function drawChart(data) {
-    const chartContainer = document.getElementById('chart-container');
-    const barHeight = 40; 
-    chartContainer.style.height = ((data.labels.length * barHeight) + 120) + 'px';
-    
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
-    
+
+    document.getElementById('chart-container').style.height = (labels.length * 40 + 100) + "px";
+
     myChart = new Chart(ctx, {
         type: 'bar',
         plugins: [ChartDataLabels],
         data: {
-            labels: data.labels,
+            labels: labels,
             datasets: [{
-                data: data.values,
-                backgroundColor: data.labels.map(l => l.includes('TOTAL') ? '#4E337E' : '#36A2EB'),
-                barPercentage: 0.7
+                data: values,
+                backgroundColor: labels.map(l => l.startsWith('TOTAL') ? '#4E337E' : '#36A2EB'),
+                barPercentage: 0.8
             }]
         },
         options: {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            layout: {
-                padding: {
-                    right: 80 // Memberi ruang di kanan agar angka label tidak terpotong
-                }
-            },
-            scales: { 
-                x: { display: false, grid: { display: false } }, 
-                y: { grid: { display: false } } 
-            },
+            layout: { padding: { right: 120 } }, // RUANG AGAR ANGKA TIDAK TERPOTONG
+            scales: { x: { display: false }, y: { grid: { display: false } } },
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    anchor: 'end',   // Meletakkan jangkar di ujung batang
-                    align: 'right',  // Menulis teks di sebelah kanan jangkar (di luar batang)
-                    offset: 5,       // Jarak kecil antara batang dan teks
-                    color: '#444',
-                    font: { weight: 'bold', size: 12 },
-                    formatter: (val) => val.toLocaleString('id-ID')
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 10, // JARAK ANGKA DARI BAR
+                    color: '#000',
+                    font: { weight: 'bold' },
+                    formatter: (v) => v.toLocaleString('id-ID')
                 }
             }
         }
     });
 }
 
-function renderTableBody(data) {
-    const tableBody = document.getElementById('tableBody');
-    tableBody.innerHTML = data.map(row => 
+function renderTable(data) {
+    document.getElementById('tableBody').innerHTML = data.map(row => 
         `<tr>${Object.values(row).map(v => `<td>${v}</td>`).join('')}</tr>`
     ).join('');
-}
-
-function updateMainFilters() {
-    const branches = [...new Set(tableData.map(d => d['Main Branch']))];
-    updateFilterOptions(document.getElementById('BranchFilter'), branches, 'Semua Main Branch');
-}
-
-function updateFilterOptions(el, items, def) {
-    el.innerHTML = `<option value="">${def}</option>` + 
-        items.sort().map(v => `<option value="${v}">${v}</option>`).join('');
-}
-
-function updateOfficeFilter(branch) {
-    const relevant = [...new Set(tableData.filter(d => !branch || d['Main Branch'] === branch).map(d => d['Office']))];
-    updateFilterOptions(document.getElementById('OfficeFilter'), relevant, 'Semua Office');
 }
 
 function resetFilter() {
     document.getElementById('BranchFilter').value = "";
     document.getElementById('OfficeFilter').value = "";
     document.getElementById('ActivityStatusFilter').value = "all";
-    updateMainFilters();
-    filterAndSearchTable();
+    filterData();
 }
 
 function printTable() { window.print(); }
