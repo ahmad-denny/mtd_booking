@@ -14,7 +14,16 @@
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; margin: 0; }
         .container { width: 95%; max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08); }
-        h2 { color: white; background: linear-gradient(90deg, #6a1b9a, #8e24aa); padding: 15px; border-radius: 8px; margin-top: 0; }
+        
+        .header-title { 
+            color: white; 
+            background: linear-gradient(90deg, #6a1b9a, #8e24aa); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-top: 0;
+        }
+        .header-title h2 { margin: 0; font-size: 22px; }
+        .as-of-date { font-size: 14px; opacity: 0.9; font-weight: normal; display: block; margin-top: 5px; }
         
         /* Filter Styles */
         .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 20px; background: #f8f9fa; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e9ecef; }
@@ -49,7 +58,10 @@
 <body>
 
 <div class="container">
-    <h2>M-Booking Performance Region Sumatera</h2>
+    <div class="header-title">
+        <h2>M-Booking Performance Region Sumatera</h2>
+        <span id="dateDisplay" class="as-of-date"></span>
+    </div>
     
     <div class="filter-container">
         <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
@@ -81,21 +93,22 @@ const ChartDataLabels = window.ChartDataLabels;
 let myChart = null;
 let tableData = [];
 
-// Helper: Bersihkan string angka agar jadi float murni
-function cleanNumber(val) {
-    if (typeof val === 'number') return val;
-    if (!val || val === "-" || val === "") return 0;
-    let cleaned = val.toString().replace(/,/g, '');
-    return parseFloat(cleaned) || 0;
-}
-
-// Helper: Format ke standar Indonesia (titik ribuan)
-function formatIndo(val) {
-    const num = cleanNumber(val);
-    return num === 0 ? "-" : num.toLocaleString('id-ID');
+// Fungsi untuk mendapatkan tanggal as of
+function getAsOfDate() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0: Minggu, 1: Senin, ..., 6: Sabtu
+    let subDays = (dayOfWeek === 1) ? 3 : 1; // Jika Senin kurangi 3, lainnya kurangi 1
+    
+    today.setDate(today.getDate() - subDays);
+    
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    return "as of " + today.toLocaleDateString('id-ID', options);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Tampilkan tanggal di header
+    document.getElementById('dateDisplay').innerText = getAsOfDate();
+
     fetch('Dataset.json')
         .then(res => res.json())
         .then(data => {
@@ -104,6 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(err => console.error("Gagal load JSON:", err));
 });
+
+function cleanNumber(val) {
+    if (typeof val === 'number') return val;
+    if (!val || val === "-" || val === "") return 0;
+    let cleaned = val.toString().replace(/,/g, '');
+    return parseFloat(cleaned) || 0;
+}
+
+function formatIndo(val) {
+    const num = cleanNumber(val);
+    return num === 0 ? "-" : num.toLocaleString('id-ID');
+}
 
 function initializeDashboard() {
     if (tableData.length === 0) return;
@@ -136,14 +161,13 @@ function updateOfficeFilter(branch) {
         offices.map(v => `<option value="${v}">${v}</option>`).join('');
 }
 
-// FUNGSI UNTUK KLIK DI TABEL (FILTER OTOMATIS)
 function clickToFilter(filterId, value) {
     const filterElem = document.getElementById(filterId);
     if (filterElem) {
         filterElem.value = value;
         if (filterId === 'BranchFilter') updateOfficeFilter(value);
         filterAndRender();
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll ke atas agar grafik terlihat
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
@@ -162,7 +186,6 @@ function filterAndRender() {
         return matchBranch && matchOffice && matchStatus;
     });
 
-    // Update Chart
     const officeMap = {};
     filtered.forEach(row => {
         const val = cleanNumber(row['Total']);
@@ -180,19 +203,12 @@ function filterAndRender() {
 
     drawChart(labels, values);
 
-    // Update Table dengan kolom yang bisa diklik
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
         let cells = Object.entries(row).map(([key, val]) => {
             const isNumber = ["TOTAL", "EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER"].includes(key.toUpperCase());
-            
-            if (key === "Main Branch") {
-                return `<td class="clickable" onclick="clickToFilter('BranchFilter', '${val}')">${val}</td>`;
-            }
-            if (key === "Office") {
-                return `<td class="clickable" onclick="clickToFilter('OfficeFilter', '${val}')">${val}</td>`;
-            }
-            
+            if (key === "Main Branch") return `<td class="clickable" onclick="clickToFilter('BranchFilter', '${val}')">${val}</td>`;
+            if (key === "Office") return `<td class="clickable" onclick="clickToFilter('OfficeFilter', '${val}')">${val}</td>`;
             return isNumber ? `<td class="text-right">${formatIndo(val)}</td>` : `<td>${val}</td>`;
         }).join('');
         return `<tr>${cells}</tr>`;
@@ -233,10 +249,6 @@ function drawChart(labels, values) {
 }
 
 async function exportToExcel() {
-    if (typeof ExcelJS === 'undefined') {
-        alert("Library ExcelJS belum terload.");
-        return;
-    }
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Booking Performance');
     const table = document.getElementById("dataTable");
@@ -269,9 +281,8 @@ async function exportToExcel() {
         column.width = maxLen + 5;
     });
 
-    const branch = document.getElementById('BranchFilter').value || "Sumatera";
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `Booking_Performance_${branch}.xlsx`);
+    saveAs(new Blob([buffer]), `Booking_Performance_${document.getElementById('BranchFilter').value || "Sumatera"}.xlsx`);
 }
 
 function resetFilter() {
