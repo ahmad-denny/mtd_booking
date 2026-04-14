@@ -241,7 +241,7 @@ function drawChart(labels, values, isTop10) {
         data: {
             labels: labels,
             datasets: [{
-                label: datasetLabel,
+                // label: datasetLabel,
                 data: values,
                 backgroundColor: labels.map(l => l.includes('Total') ? '#4E337E' : '#36A2EB'),
                 barPercentage: 0.7
