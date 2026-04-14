@@ -271,7 +271,7 @@ function drawChart(labels, values) {
         data: {
             labels: labels,
             datasets: [{
-                data: values,
+                data: values, display: false,
                 backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
                 barPercentage: 0.7
             }]
