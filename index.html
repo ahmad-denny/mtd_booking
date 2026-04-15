@@ -191,20 +191,29 @@ function filterAndRender() {
     const officeMap = {};
     const breakdownMap = {};
 
+    // Fungsi pembantu untuk mencari nilai kolom secara fleksibel
+    const getValue = (row, targetName) => {
+        const key = Object.keys(row).find(k => 
+            k.toLowerCase().trim().replace(/\s/g, '') === targetName.toLowerCase().replace(/\s/g, '')
+        );
+        return cleanNumber(row[key]);
+    };
+
     filtered.forEach(row => {
         const office = row['Office'];
-        const val = cleanNumber(row['Total']);
+        const val = getValue(row, 'Total');
         officeMap[office] = (officeMap[office] || 0) + val;
 
-        // Akumulasi Breakdown (Disamakan dengan Case JSON Anda)
         if(!breakdownMap[office]) {
             breakdownMap[office] = { emas: 0, multiguna: 0, prohajj: 0, kpr: 0, nonCon: 0 };
         }
-        breakdownMap[office].emas += cleanNumber(row['Emas']);
-        breakdownMap[office].multiguna += cleanNumber(row['MultiGuna']);
-        breakdownMap[office].prohajj += cleanNumber(row['Prohajj']);
-        breakdownMap[office].kpr += cleanNumber(row['KPR']);
-        breakdownMap[office].nonCon += cleanNumber(row['Non Consumer']);
+        
+        // Menggunakan pencarian fleksibel agar tidak nol lagi
+        breakdownMap[office].emas += getValue(row, 'Emas');
+        breakdownMap[office].multiguna += getValue(row, 'MultiGuna');
+        breakdownMap[office].prohajj += getValue(row, 'Prohajj');
+        breakdownMap[office].kpr += getValue(row, 'KPR');
+        breakdownMap[office].nonCon += getValue(row, 'Non Consumer');
     });
 
     let sortedEntries = Object.entries(officeMap).sort((a, b) => b[1] - a[1]);
@@ -215,41 +224,33 @@ function filterAndRender() {
         sortedEntries = sortedEntries.slice(-10).reverse();
     }
 
-    let dynamicTitle = (rankVal === 'all' ? '' : (rankVal === 'top10' ? 'Top 10 ' : 'Bottom 10 ')) + "Booking Performance";
-    if (!branchVal && !officeVal) dynamicTitle += " Region Sumatera";
-    else if (branchVal && !officeVal) dynamicTitle += " " + branchVal;
-    else if (!branchVal && officeVal) dynamicTitle += " " + officeVal;
-    else dynamicTitle += " " + branchVal + " - " + officeVal;
-    headerElem.innerText = dynamicTitle;
-
     let chartLabels = sortedEntries.map(e => e[0]);
     let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
     let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // Hitung Total Region Sumatera
+    // Kalkulasi Total Sumatera secara fleksibel
     const sumateraBreakdown = {
-        emas: tableData.reduce((acc, curr) => acc + cleanNumber(curr['Emas']), 0),
-        multiguna: tableData.reduce((acc, curr) => acc + cleanNumber(curr['MultiGuna']), 0),
-        prohajj: tableData.reduce((acc, curr) => acc + cleanNumber(curr['Prohajj']), 0),
-        kpr: tableData.reduce((acc, curr) => acc + cleanNumber(curr['KPR']), 0),
-        nonCon: tableData.reduce((acc, curr) => acc + cleanNumber(curr['Non Consumer']), 0)
+        emas: tableData.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
+        multiguna: tableData.reduce((acc, curr) => acc + getValue(curr, 'MultiGuna'), 0),
+        prohajj: tableData.reduce((acc, curr) => acc + getValue(curr, 'Prohajj'), 0),
+        kpr: tableData.reduce((acc, curr) => acc + getValue(curr, 'KPR'), 0),
+        nonCon: tableData.reduce((acc, curr) => acc + getValue(curr, 'Non Consumer'), 0)
     };
-    const totalSumatera = tableData.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+    const totalSumatera = tableData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
 
     chartLabels.unshift("TOTAL REGION SUMATERA");
     chartValues.unshift(Math.round(totalSumatera / 1000000));
     chartDetails.unshift(sumateraBreakdown);
 
-    // Hitung Total Branch jika ada filter branch
     if (branchVal && !officeVal) {
         const branchBreakdown = {
-            emas: filtered.reduce((acc, curr) => acc + cleanNumber(curr['Emas']), 0),
-            multiguna: filtered.reduce((acc, curr) => acc + cleanNumber(curr['MultiGuna']), 0),
-            prohajj: filtered.reduce((acc, curr) => acc + cleanNumber(curr['Prohajj']), 0),
-            kpr: filtered.reduce((acc, curr) => acc + cleanNumber(curr['KPR']), 0),
-            nonCon: filtered.reduce((acc, curr) => acc + cleanNumber(curr['Non Consumer']), 0)
+            emas: filtered.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
+            multiguna: filtered.reduce((acc, curr) => acc + getValue(curr, 'MultiGuna'), 0),
+            prohajj: filtered.reduce((acc, curr) => acc + getValue(curr, 'Prohajj'), 0),
+            kpr: filtered.reduce((acc, curr) => acc + getValue(curr, 'KPR'), 0),
+            nonCon: filtered.reduce((acc, curr) => acc + getValue(curr, 'Non Consumer'), 0)
         };
-        const branchTotalVal = filtered.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+        const branchTotalVal = filtered.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
         chartLabels.splice(1, 0, "TOTAL " + branchVal.toUpperCase());
         chartValues.splice(1, 0, Math.round(branchTotalVal / 1000000));
         chartDetails.splice(1, 0, branchBreakdown);
@@ -257,6 +258,15 @@ function filterAndRender() {
 
     drawChart(chartLabels, chartValues, chartDetails);
 
+    // Update Header Text
+    let dynamicTitle = (rankVal === 'all' ? '' : (rankVal === 'top10' ? 'Top 10 ' : 'Bottom 10 ')) + "Booking Performance";
+    if (!branchVal && !officeVal) dynamicTitle += " Region Sumatera";
+    else if (branchVal && !officeVal) dynamicTitle += " " + branchVal;
+    else if (!branchVal && officeVal) dynamicTitle += " " + officeVal;
+    else dynamicTitle += " " + branchVal + " - " + officeVal;
+    headerElem.innerText = dynamicTitle;
+
+    // Update Table
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
         let cells = Object.entries(row).map(([key, val]) => {
@@ -269,7 +279,6 @@ function filterAndRender() {
         return `<tr>${cells}</tr>`;
     }).join('');
 }
-
 function drawChart(labels, values, details) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
