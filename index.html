@@ -185,53 +185,71 @@ function filterAndRender() {
     });
 
     const officeMap = {};
+    const breakdownMap = {};
+
     filtered.forEach(row => {
+        const office = row['Office'];
         const val = cleanNumber(row['Total']);
-        officeMap[row['Office']] = (officeMap[row['Office']] || 0) + val;
+        officeMap[office] = (officeMap[office] || 0) + val;
+
+        // Akumulasi Breakdown per Office
+        if(!breakdownMap[office]) {
+            breakdownMap[office] = { emas: 0, multiguna: 0, prohajj: 0, kpr: 0, nonCon: 0 };
+        }
+        breakdownMap[office].emas += cleanNumber(row['EMAS']);
+        breakdownMap[office].multiguna += cleanNumber(row['MULTIGUNA']);
+        breakdownMap[office].prohajj += cleanNumber(row['PROHAJJ']);
+        breakdownMap[office].kpr += cleanNumber(row['KPR']);
+        breakdownMap[office].nonCon += cleanNumber(row['NON CONSUMER']);
     });
 
     let sortedEntries = Object.entries(officeMap).sort((a, b) => b[1] - a[1]);
 
-    let rankText = "";
-    let finalChartEntries = sortedEntries;
-
     if (rankVal === 'top10') {
-        finalChartEntries = sortedEntries.slice(0, 10);
-        rankText = "Top 10 ";
+        sortedEntries = sortedEntries.slice(0, 10);
     } else if (rankVal === 'bottom10') {
-        finalChartEntries = sortedEntries.slice(-10).reverse();
-        rankText = "Bottom 10 ";
+        sortedEntries = sortedEntries.slice(-10).reverse();
     }
 
-    let dynamicTitle = rankText + "Booking Performance";
-    if (!branchVal && !officeVal) {
-        dynamicTitle += " Region Sumatera";
-    } else if (branchVal && !officeVal) {
-        dynamicTitle += " " + branchVal;
-    } else if (!branchVal && officeVal) {
-        dynamicTitle += " " + officeVal;
-    } else {
-        dynamicTitle += " " + branchVal + " - " + officeVal;
-    }
+    let dynamicTitle = (rankVal === 'all' ? '' : (rankVal === 'top10' ? 'Top 10 ' : 'Bottom 10 ')) + "Booking Performance";
+    if (!branchVal && !officeVal) dynamicTitle += " Region Sumatera";
+    else if (branchVal && !officeVal) dynamicTitle += " " + branchVal;
+    else if (!branchVal && officeVal) dynamicTitle += " " + officeVal;
+    else dynamicTitle += " " + branchVal + " - " + officeVal;
     headerElem.innerText = dynamicTitle;
 
-    let chartLabels = finalChartEntries.map(e => e[0]);
-    let chartValues = finalChartEntries.map(e => Math.round(e[1] / 1000000));
+    let chartLabels = sortedEntries.map(e => e[0]);
+    let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
+    let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // LOGIKA PERBAIKAN: Menambahkan Bar Total
-    // 1. Selalu tambahkan Total Region Sumatera di paling atas
+    // Logic Total Region
     const grandTotalSumatera = tableData.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+    const sumateraBreakdown = {
+        emas: tableData.reduce((acc, curr) => acc + cleanNumber(curr['EMAS']), 0),
+        multiguna: tableData.reduce((acc, curr) => acc + cleanNumber(curr['MULTIGUNA']), 0),
+        prohajj: tableData.reduce((acc, curr) => acc + cleanNumber(curr['PROHAJJ']), 0),
+        kpr: tableData.reduce((acc, curr) => acc + cleanNumber(curr['KPR']), 0),
+        nonCon: tableData.reduce((acc, curr) => acc + cleanNumber(curr['NON CONSUMER']), 0)
+    };
     chartLabels.unshift("TOTAL REGION SUMATERA");
     chartValues.unshift(Math.round(grandTotalSumatera / 1000000));
+    chartDetails.unshift(sumateraBreakdown);
 
-    // 2. Jika Main Branch dipilih, sisipkan Total Branch tersebut di bawah Total Sumatera
     if (branchVal && !officeVal) {
         const branchTotal = filtered.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+        const branchBreakdown = {
+            emas: filtered.reduce((acc, curr) => acc + cleanNumber(curr['EMAS']), 0),
+            multiguna: filtered.reduce((acc, curr) => acc + cleanNumber(curr['MULTIGUNA']), 0),
+            prohajj: filtered.reduce((acc, curr) => acc + cleanNumber(curr['PROHAJJ']), 0),
+            kpr: filtered.reduce((acc, curr) => acc + cleanNumber(curr['KPR']), 0),
+            nonCon: filtered.reduce((acc, curr) => acc + cleanNumber(curr['NON CONSUMER']), 0)
+        };
         chartLabels.splice(1, 0, "TOTAL " + branchVal.toUpperCase());
         chartValues.splice(1, 0, Math.round(branchTotal / 1000000));
+        chartDetails.splice(1, 0, branchBreakdown);
     }
 
-    drawChart(chartLabels, chartValues);
+    drawChart(chartLabels, chartValues, chartDetails);
 
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
@@ -245,7 +263,7 @@ function filterAndRender() {
     }).join('');
 }
 
-function drawChart(labels, values) {
+function drawChart(labels, values, details) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
     
@@ -260,7 +278,8 @@ function drawChart(labels, values) {
             datasets: [{
                 data: values,
                 backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
-                barPercentage: 0.7
+                barPercentage: 0.7,
+                details: details
             }]
         },
         options: {
@@ -282,6 +301,26 @@ function drawChart(labels, values) {
             },
             plugins: {
                 legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            const idx = context.dataIndex;
+                            const d = context.dataset.details[idx];
+                            const fmt = (num) => Math.round(num / 1000000).toLocaleString('id-ID');
+                            return [
+                                `Total: ${context.raw.toLocaleString('id-ID')} Jt`,
+                                `--------------------------`,
+                                `Emas: ${fmt(d.emas)} Jt`,
+                                `Multiguna: ${fmt(d.multiguna)} Jt`,
+                                `Prohajj: ${fmt(d.prohajj)} Jt`,
+                                `KPR: ${fmt(d.kpr)} Jt`,
+                                `Non Consumer: ${fmt(d.nonCon)} Jt`
+                            ];
+                        }
+                    }
+                },
                 datalabels: {
                     anchor: 'end', align: 'right', offset: 5, color: '#000',
                     font: (context) => {
