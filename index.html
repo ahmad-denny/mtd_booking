@@ -129,7 +129,9 @@ function clickToFilter(filterId, value) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('dateDisplay').innerText = "as of " + new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+    // Tanggal dikunci ke 14 April 2026
+    document.getElementById('dateDisplay').innerText = "as of 14 April 2026";
+    
     fetch('Dataset.json')
         .then(res => res.json())
         .then(data => {
@@ -190,7 +192,7 @@ function filterAndRender() {
     let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
     let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // 1. TOTAL REGION SUMATERA (SELALU ADA)
+    // Total Region Sumatera
     const regTotal = tableData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
     const regDetails = {
         emas: tableData.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
@@ -203,7 +205,7 @@ function filterAndRender() {
     chartValues.unshift(Math.round(regTotal / 1000000));
     chartDetails.unshift(regDetails);
 
-    // 2. TOTAL MAIN BRANCH (MUNCUL JIKA BRANCH DIFILTER)
+    // Total Main Branch
     if (branchVal && !officeVal) {
         const branchData = tableData.filter(d => d['Main Branch'] === branchVal);
         const branchTotal = branchData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
@@ -263,7 +265,15 @@ function drawChart(labels, values, details) {
                         label: function(ctx) {
                             const d = ctx.dataset.details[ctx.dataIndex];
                             const f = (n) => Math.round(n/1000000).toLocaleString('id-ID') + " Jt";
-                            return [`Total: ${ctx.raw} Jt`, `---`, `Emas: ${f(d.emas)}`, `Multiguna: ${f(d.multiguna)}`, `Prohajj: ${f(d.prohajj)}`, `KPR: ${f(d.kpr)}`, `Non Consumer: ${f(d.nonCon)}`];
+                            // Menambahkan spasi (padding manual) untuk teks produk agar agak menjorok ke dalam
+                            return [
+                                `Total: ${ctx.raw} Jt`,
+                                `  Emas: ${f(d.emas)}`,
+                                `  Multiguna: ${f(d.multiguna)}`,
+                                `  Prohajj: ${f(d.prohajj)}`,
+                                `  KPR: ${f(d.kpr)}`,
+                                `  Non Consumer: ${f(d.nonCon)}`
+                            ];
                         }
                     }
                 },
