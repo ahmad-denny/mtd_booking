@@ -66,9 +66,9 @@
         <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
         <select id="OfficeFilter"><option value="">Semua Office</option></select>
         <select id="RankFilter">
-            <option value="top10">Top 10 Booking</option>
+            <option value="top10" selected>Top 10 Booking</option>
             <option value="bottom10">Bottom 10 Booking</option>
-            <option value="all" selected>Semua Data</option>
+            <option value="all">Semua Data</option>
         </select>
         <button class="btn excel-btn" onclick="exportToExcel()">Excel</button>
         <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
@@ -128,7 +128,7 @@ function init() {
     document.getElementById('tableHead').innerHTML = cols.map(c => `<th>${c.trim()}</th>`).join('');
     
     const branches = [...new Set(tableData.map(d => getVal(d, 'Main Branch').trim()))].filter(v => v).sort();
-    document.getElementById('BranchFilter').innerHTML = '<option value="">Top 10 Booking</option>' + 
+    document.getElementById('BranchFilter').innerHTML = '<option value="">Semua Main Branch</option>' + 
         branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
     document.getElementById('BranchFilter').addEventListener('change', updateOfficeDropdown);
@@ -163,24 +163,24 @@ function render() {
     else if (bVal) header.innerText = `Booking Performance ${bVal}`;
     else header.innerText = "Booking Performance Semua Cabang";
 
-    // Step 1: Filter Berdasarkan Dropdown Branch & Office
+    // Filter awal
     let baseFiltered = tableData.filter(d => {
         return (!bVal || getVal(d, 'Main Branch').trim() === bVal) && 
                (!oVal || getVal(d, 'Office').trim() === oVal);
     });
 
-    // Step 2: Sorting untuk Rank (Top/Bottom)
+    // Sorting Dasar
     let sortedData = [...baseFiltered].sort((a, b) => cleanNum(getVal(b, 'Total')) - cleanNum(getVal(a, 'Total')));
     
-    // Final Data untuk Tabel
+    // Rank Data untuk Tabel
     let finalTableData = sortedData;
     if (rVal === 'top10') finalTableData = sortedData.slice(0, 10);
     else if (rVal === 'bottom10') finalTableData = sortedData.slice(-10).reverse();
 
-    // Kalkulasi Chart Berdasarkan Data yang sudah di-rank
-    const chartLabels = finalTableData.map(d => getVal(d, 'Office').trim());
-    const chartValues = finalTableData.map(d => Math.round(cleanNum(getVal(d, 'Total')) / 1000000));
-    const chartDets = finalTableData.map(d => ({
+    // Persiapan Chart Data
+    let chartLabels = finalTableData.map(d => getVal(d, 'Office').trim());
+    let chartValues = finalTableData.map(d => Math.round(cleanNum(getVal(d, 'Total')) / 1000000));
+    let chartDets = finalTableData.map(d => ({
         emas: cleanNum(getVal(d, 'Emas')),
         multi: cleanNum(getVal(d, 'MultiGuna')),
         hajj: cleanNum(getVal(d, 'Prohajj')),
@@ -188,7 +188,22 @@ function render() {
         non: cleanNum(getVal(d, 'Non Consumer'))
     }));
 
-    // Tambahkan Total Region (Hanya jika tidak sedang filter Office tunggal)
+    // 1. TAMBAHKAN TOTAL MAIN BRANCH (Jika Branch dipilih)
+    if (bVal && !oVal) {
+        const branchRows = tableData.filter(d => getVal(d, 'Main Branch').trim() === bVal);
+        const branchTotal = branchRows.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Total')), 0);
+        chartLabels.unshift("TOTAL " + bVal.toUpperCase());
+        chartValues.unshift(Math.round(branchTotal / 1000000));
+        chartDets.unshift({
+            emas: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'Emas')), 0),
+            multi: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'MultiGuna')), 0),
+            hajj: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'Prohajj')), 0),
+            kpr: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'KPR')), 0),
+            non: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'Non Consumer')), 0)
+        });
+    }
+
+    // 2. TAMBAHKAN TOTAL REGION (Selalu di posisi paling atas)
     if (!oVal) {
         const regTotal = tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Total')), 0);
         chartLabels.unshift("TOTAL REGION SUMATERA");
@@ -204,7 +219,7 @@ function render() {
 
     draw(chartLabels, chartValues, chartDets);
 
-    // Update Tabel - SEKARANG SESUAI DENGAN RANK
+    // Render Tabel
     document.getElementById('tableBody').innerHTML = finalTableData.map(row => {
         return `<tr>${Object.entries(row).map(([k, v]) => {
             const kc = k.trim().toUpperCase();
@@ -226,13 +241,20 @@ function draw(labels, data, dets) {
     document.getElementById('chart-container').style.height = (labels.length * 35 + 60) + "px";
     myChart = new Chart(ctx, {
         type: 'bar', plugins: [ChartDataLabels],
-        data: { labels, datasets: [{ data, backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'), details: dets }] },
+        data: { 
+            labels, 
+            datasets: [{ 
+                data, 
+                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'), 
+                details: dets 
+            }] 
+        },
         options: {
             indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-            scales: { x: { display: false }, y: { grid: { display: false } } },
+            scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } },
             plugins: {
                 legend: { display: false },
-                datalabels: { anchor:'end', align:'right', formatter: v => v + " Jt", font: { weight:'bold' } },
+                datalabels: { anchor:'end', align:'right', formatter: v => v + " Jt", font: { weight:'bold', size: 10 } },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
