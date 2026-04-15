@@ -113,10 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(err => console.error("Gagal load JSON:", err));
 });
 
+// Perbaikan fungsi pembersih angka (Handling spasi dan strip dari JSON)
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
-    if (!val || val === "-" || val === "") return 0;
-    let cleaned = val.toString().replace(/,/g, '');
+    if (!val) return 0;
+    
+    let cleaned = val.toString().trim().replace(/,/g, '');
+    if (cleaned === "-" || cleaned === "") return 0;
+    
     return parseFloat(cleaned) || 0;
 }
 
@@ -192,15 +196,15 @@ function filterAndRender() {
         const val = cleanNumber(row['Total']);
         officeMap[office] = (officeMap[office] || 0) + val;
 
-        // Akumulasi Breakdown per Office
+        // Akumulasi Breakdown (Disamakan dengan Case JSON Anda)
         if(!breakdownMap[office]) {
             breakdownMap[office] = { emas: 0, multiguna: 0, prohajj: 0, kpr: 0, nonCon: 0 };
         }
-        breakdownMap[office].emas += cleanNumber(row['EMAS']);
-        breakdownMap[office].multiguna += cleanNumber(row['MULTIGUNA']);
-        breakdownMap[office].prohajj += cleanNumber(row['PROHAJJ']);
+        breakdownMap[office].emas += cleanNumber(row['Emas']);
+        breakdownMap[office].multiguna += cleanNumber(row['MultiGuna']);
+        breakdownMap[office].prohajj += cleanNumber(row['Prohajj']);
         breakdownMap[office].kpr += cleanNumber(row['KPR']);
-        breakdownMap[office].nonCon += cleanNumber(row['NON CONSUMER']);
+        breakdownMap[office].nonCon += cleanNumber(row['Non Consumer']);
     });
 
     let sortedEntries = Object.entries(officeMap).sort((a, b) => b[1] - a[1]);
@@ -222,30 +226,32 @@ function filterAndRender() {
     let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
     let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // Logic Total Region
-    const grandTotalSumatera = tableData.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+    // Hitung Total Region Sumatera
     const sumateraBreakdown = {
-        emas: tableData.reduce((acc, curr) => acc + cleanNumber(curr['EMAS']), 0),
-        multiguna: tableData.reduce((acc, curr) => acc + cleanNumber(curr['MULTIGUNA']), 0),
-        prohajj: tableData.reduce((acc, curr) => acc + cleanNumber(curr['PROHAJJ']), 0),
+        emas: tableData.reduce((acc, curr) => acc + cleanNumber(curr['Emas']), 0),
+        multiguna: tableData.reduce((acc, curr) => acc + cleanNumber(curr['MultiGuna']), 0),
+        prohajj: tableData.reduce((acc, curr) => acc + cleanNumber(curr['Prohajj']), 0),
         kpr: tableData.reduce((acc, curr) => acc + cleanNumber(curr['KPR']), 0),
-        nonCon: tableData.reduce((acc, curr) => acc + cleanNumber(curr['NON CONSUMER']), 0)
+        nonCon: tableData.reduce((acc, curr) => acc + cleanNumber(curr['Non Consumer']), 0)
     };
+    const totalSumatera = tableData.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
+
     chartLabels.unshift("TOTAL REGION SUMATERA");
-    chartValues.unshift(Math.round(grandTotalSumatera / 1000000));
+    chartValues.unshift(Math.round(totalSumatera / 1000000));
     chartDetails.unshift(sumateraBreakdown);
 
+    // Hitung Total Branch jika ada filter branch
     if (branchVal && !officeVal) {
-        const branchTotal = filtered.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
         const branchBreakdown = {
-            emas: filtered.reduce((acc, curr) => acc + cleanNumber(curr['EMAS']), 0),
-            multiguna: filtered.reduce((acc, curr) => acc + cleanNumber(curr['MULTIGUNA']), 0),
-            prohajj: filtered.reduce((acc, curr) => acc + cleanNumber(curr['PROHAJJ']), 0),
+            emas: filtered.reduce((acc, curr) => acc + cleanNumber(curr['Emas']), 0),
+            multiguna: filtered.reduce((acc, curr) => acc + cleanNumber(curr['MultiGuna']), 0),
+            prohajj: filtered.reduce((acc, curr) => acc + cleanNumber(curr['Prohajj']), 0),
             kpr: filtered.reduce((acc, curr) => acc + cleanNumber(curr['KPR']), 0),
-            nonCon: filtered.reduce((acc, curr) => acc + cleanNumber(curr['NON CONSUMER']), 0)
+            nonCon: filtered.reduce((acc, curr) => acc + cleanNumber(curr['Non Consumer']), 0)
         };
+        const branchTotalVal = filtered.reduce((acc, curr) => acc + cleanNumber(curr['Total']), 0);
         chartLabels.splice(1, 0, "TOTAL " + branchVal.toUpperCase());
-        chartValues.splice(1, 0, Math.round(branchTotal / 1000000));
+        chartValues.splice(1, 0, Math.round(branchTotalVal / 1000000));
         chartDetails.splice(1, 0, branchBreakdown);
     }
 
@@ -254,7 +260,8 @@ function filterAndRender() {
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
         let cells = Object.entries(row).map(([key, val]) => {
-            const isNumber = ["TOTAL", "EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER"].includes(key.toUpperCase());
+            const k = key.toUpperCase().trim();
+            const isNumber = ["TOTAL", "EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER"].includes(k);
             if (key === "Main Branch") return `<td class="clickable" onclick="clickToFilter('BranchFilter', '${val}')">${val}</td>`;
             if (key === "Office") return `<td class="clickable" onclick="clickToFilter('OfficeFilter', '${val}')">${val}</td>`;
             return isNumber ? `<td class="text-right">${formatJutaan(val)}</td>` : `<td>${val}</td>`;
@@ -302,16 +309,20 @@ function drawChart(labels, values, details) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    padding: 15,
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 13 },
                     callbacks: {
                         label: function(context) {
                             const idx = context.dataIndex;
                             const d = context.dataset.details[idx];
                             const fmt = (num) => Math.round(num / 1000000).toLocaleString('id-ID');
+                            
+                            // Baris-baris tooltip
                             return [
                                 `Total: ${context.raw.toLocaleString('id-ID')} Jt`,
-                                `--------------------------`,
+                                `--------------------------------`,
                                 `Emas: ${fmt(d.emas)} Jt`,
                                 `Multiguna: ${fmt(d.multiguna)} Jt`,
                                 `Prohajj: ${fmt(d.prohajj)} Jt`,
