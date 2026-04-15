@@ -41,7 +41,7 @@
         .text-right { text-align: right; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        /* RESPONSIVE SMARTPHONE (MOBILE) - SUPER RAPAT */
+        /* RESPONSIVE SMARTPHONE (MOBILE) */
         @media screen and (max-width: 768px) {
             .container { padding: 8px; }
             .filter-container { flex-direction: column; align-items: stretch; gap: 6px; }
@@ -68,9 +68,9 @@
                 top: 50%; transform: translateY(-50%);
             }
 
-            /* Efek Indentasi khusus Produk Consumer di Mobile */
+            /* 2. Indentasi Teks Label Produk di Smartphone */
             td.indent-label:before {
-                left: 25px; /* Teks label menjorok ke dalam */
+                left: 25px;
                 font-weight: normal;
                 color: #555;
             }
@@ -131,6 +131,7 @@ function formatJutaan(val) {
     return num === 0 ? "-" : Math.round(num / 1000000).toLocaleString('id-ID');
 }
 
+// Perbaikan fungsi klik tabel agar dropdown Office ikut ter-update
 function clickToFilter(filterId, value) {
     const filterElem = document.getElementById(filterId);
     filterElem.value = value;
@@ -138,12 +139,11 @@ function clickToFilter(filterId, value) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // LOGIKA TANGGAL: Senin -> -3 hari, lainnya -> -1 hari
+    // 1. Logika Tanggal: Senin -> -3 hari, Selasa-Jumat -> -1 hari
     const today = new Date();
-    const dayName = today.getDay(); // 0=Minggu, 1=Senin...
+    const dayName = today.getDay(); 
     const diff = (dayName === 1) ? 3 : 1;
     today.setDate(today.getDate() - diff);
-    
     document.getElementById('dateDisplay').innerText = "as of " + today.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
     
     fetch('Dataset.json')
@@ -162,6 +162,7 @@ function initializeDashboard() {
     const branches = [...new Set(tableData.map(d => d['Main Branch']))].sort();
     document.getElementById('BranchFilter').innerHTML = '<option value="">Semua Main Branch</option>' + branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
+    // Perbaikan: Pastikan dropdown Office terisi saat Branch berubah
     document.getElementById('BranchFilter').addEventListener('change', (e) => {
         const branch = e.target.value;
         const offices = [...new Set(tableData.filter(d => !branch || d['Main Branch'] === branch).map(d => d['Office']))].sort();
@@ -206,7 +207,7 @@ function filterAndRender() {
     let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
     let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // Total Sumatera
+    // Total Region Sumatera
     const regTotal = tableData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
     const regDetails = {
         emas: tableData.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
@@ -219,7 +220,7 @@ function filterAndRender() {
     chartValues.unshift(Math.round(regTotal / 1000000));
     chartDetails.unshift(regDetails);
 
-    // Total Main Branch
+    // Total Main Branch (Kembali ditampilkan jika filter branch aktif)
     if (branchVal && !officeVal) {
         const branchData = tableData.filter(d => d['Main Branch'] === branchVal);
         const branchTotal = branchData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
@@ -246,61 +247,8 @@ function filterAndRender() {
             
             const display = isNum ? formatJutaan(val) : val;
             let cls = isNum ? 'text-right' : (key==='Main Branch'||key==='Office'?'clickable':'');
-            
-            // Tambahkan class indent untuk baris produk di mobile
             if (isProduct) cls += ' indent-label';
 
             let attr = key === 'Main Branch' ? `onclick="clickToFilter('BranchFilter', '${val}')"` : (key === 'Office' ? `onclick="clickToFilter('OfficeFilter', '${val}')"` : '');
             return `<td class="${cls}" ${attr} data-label="${key}">${display}</td>`;
         }).join('')}</tr>`;
-    }).join('');
-}
-
-function drawChart(labels, values, details) {
-    const ctx = document.getElementById('myBarChart').getContext('2d');
-    if (myChart) myChart.destroy();
-    document.getElementById('chart-container').style.height = (labels.length * 35 + 80) + "px";
-
-    myChart = new Chart(ctx, {
-        type: 'bar',
-        plugins: [ChartDataLabels],
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
-                barPercentage: 0.7,
-                details: details
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: { padding: { right: 80 } },
-            scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) {
-                            const d = ctx.dataset.details[ctx.dataIndex];
-                            const f = (n) => Math.round(n/1000000).toLocaleString('id-ID') + " Jt";
-                            return [`Total: ${ctx.raw} Jt`, `Emas: ${f(d.emas)}`, `Multiguna: ${f(d.multiguna)}`, `Prohajj: ${f(d.prohajj)}`, `KPR: ${f(d.kpr)}`, `Non Consumer: ${f(d.nonCon)}`];
-                        }
-                    }
-                },
-                datalabels: {
-                    anchor: 'end', align: 'right', offset: 5, font: { weight: 'bold', size: 11 },
-                    formatter: (v) => v.toLocaleString('id-ID') + " Jt"
-                }
-            }
-        }
-    });
-}
-
-function resetFilter() { location.reload(); }
-function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
-</script>
-</body>
-</html>
