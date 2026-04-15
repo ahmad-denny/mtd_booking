@@ -44,7 +44,7 @@
         .text-right { text-align: right; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        /* RESPONSIVE SMARTPHONE (MOBILE) - VERSI RAPAT & RINGKAS */
+        /* RESPONSIVE SMARTPHONE (MOBILE) - VERSI RAPAT */
         @media screen and (max-width: 768px) {
             .container { padding: 10px; }
             .header-title h2 { font-size: 18px; }
@@ -54,44 +54,20 @@
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
             
-            tr { 
-                border: 1px solid #ddd; 
-                margin-bottom: 12px; 
-                border-radius: 8px; 
-                background: #fff; 
-                box-shadow: 0 1px 3px rgba(0,0,0,0.08); 
-                overflow: hidden;
-            }
+            tr { border: 1px solid #ddd; margin-bottom: 12px; border-radius: 8px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
 
             td { 
-                border: none; 
-                border-bottom: 1px solid #f0f0f0; 
-                position: relative; 
+                border: none; border-bottom: 1px solid #f0f0f0; position: relative; 
                 padding: 10px 10px 10px 45% !important; 
-                text-align: right !important; 
-                font-size: 13px;
-                line-height: 1.2;
-                min-height: 38px;
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
+                text-align: right !important; font-size: 13px; line-height: 1.2;
+                min-height: 38px; display: flex; align-items: center; justify-content: flex-end;
             }
 
             td:last-child { border-bottom: none; }
-
             td:before { 
-                content: attr(data-label); 
-                position: absolute; 
-                left: 12px; 
-                width: 40%; 
-                font-weight: bold; 
-                color: #6a1b9a; 
-                text-align: left;
-                white-space: nowrap;
+                content: attr(data-label); position: absolute; left: 12px; width: 40%; 
+                font-weight: bold; color: #6a1b9a; text-align: left; white-space: nowrap;
             }
-            
-            .text-right { font-weight: bold; color: #333; }
         }
     </style>
 </head>
@@ -130,7 +106,7 @@
 let myChart = null;
 let tableData = [];
 
-// Pembersih Angka (Menangani spasi, koma, dan strip)
+// Pembersih Angka
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
     if (!val) return 0;
@@ -139,7 +115,7 @@ function cleanNumber(val) {
     return parseFloat(cleaned) || 0;
 }
 
-// Pencari Kolom Fleksibel (Mencegah detail produk 0)
+// Pencari Kolom Fleksibel
 function getValue(row, targetName) {
     const key = Object.keys(row).find(k => 
         k.toLowerCase().trim().replace(/\s/g, '') === targetName.toLowerCase().replace(/\s/g, '')
@@ -152,8 +128,14 @@ function formatJutaan(val) {
     return num === 0 ? "-" : Math.round(num / 1000000).toLocaleString('id-ID');
 }
 
+// Fitur Klik Tabel
+function clickToFilter(filterId, value) {
+    const filterElem = document.getElementById(filterId);
+    filterElem.value = value;
+    filterElem.dispatchEvent(new Event('change'));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Tanggal as of (Kemarin atau Jumat jika hari Senin)
     const today = new Date();
     const day = today.getDay();
     today.setDate(today.getDate() - (day === 1 ? 3 : 1));
@@ -172,7 +154,6 @@ function initializeDashboard() {
     const columns = Object.keys(tableData[0]);
     document.getElementById('tableHead').innerHTML = columns.map(col => `<th>${col}</th>`).join('');
     
-    // Update Filter Options
     const branches = [...new Set(tableData.map(d => d['Main Branch']))].sort();
     document.getElementById('BranchFilter').innerHTML = '<option value="">Semua Main Branch</option>' + branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
@@ -217,16 +198,39 @@ function filterAndRender() {
     if (rankVal === 'top10') sortedEntries = sortedEntries.slice(0, 10);
     else if (rankVal === 'bottom10') sortedEntries = sortedEntries.slice(-10).reverse();
 
-    drawChart(sortedEntries.map(e => e[0]), sortedEntries.map(e => Math.round(e[1] / 1000000)), sortedEntries.map(e => breakdownMap[e[0]]));
+    // Data untuk Chart
+    let chartLabels = sortedEntries.map(e => e[0]);
+    let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
+    let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // Update Tabel
+    // Tambahkan Total Sumatera ke Atas Grafik
+    const sumateraTotalVal = tableData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
+    const sumateraBreakdown = {
+        emas: tableData.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
+        multiguna: tableData.reduce((acc, curr) => acc + getValue(curr, 'MultiGuna'), 0),
+        prohajj: tableData.reduce((acc, curr) => acc + getValue(curr, 'Prohajj'), 0),
+        kpr: tableData.reduce((acc, curr) => acc + getValue(curr, 'KPR'), 0),
+        nonCon: tableData.reduce((acc, curr) => acc + getValue(curr, 'Non Consumer'), 0)
+    };
+    chartLabels.unshift("TOTAL REGION SUMATERA");
+    chartValues.unshift(Math.round(sumateraTotalVal / 1000000));
+    chartDetails.unshift(sumateraBreakdown);
+
+    drawChart(chartLabels, chartValues, chartDetails);
+
+    // Update Tabel dengan OnClick
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
         return `<tr>${Object.entries(row).map(([key, val]) => {
             const isNum = ["TOTAL", "EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER"].includes(key.toUpperCase().trim());
             const display = isNum ? formatJutaan(val) : val;
-            const cls = isNum ? 'text-right' : (key==='Main Branch'||key==='Office'?'clickable':'');
-            return `<td class="${cls}" data-label="${key}">${display}</td>`;
+            let cls = isNum ? 'text-right' : '';
+            let clickAttr = '';
+            
+            if (key === 'Main Branch') { cls += ' clickable'; clickAttr = `onclick="clickToFilter('BranchFilter', '${val}')"`; }
+            else if (key === 'Office') { cls += ' clickable'; clickAttr = `onclick="clickToFilter('OfficeFilter', '${val}')"`; }
+
+            return `<td class="${cls}" ${clickAttr} data-label="${key}">${display}</td>`;
         }).join('')}</tr>`;
     }).join('');
 }
@@ -234,7 +238,6 @@ function filterAndRender() {
 function drawChart(labels, values, details) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
-    
     document.getElementById('chart-container').style.height = (labels.length * 40 + 80) + "px";
 
     myChart = new Chart(ctx, {
@@ -244,7 +247,7 @@ function drawChart(labels, values, details) {
             labels: labels,
             datasets: [{
                 data: values,
-                backgroundColor: '#36A2EB',
+                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'),
                 barPercentage: 0.7,
                 details: details
             }]
@@ -267,8 +270,7 @@ function drawChart(labels, values, details) {
                     }
                 },
                 datalabels: {
-                    anchor: 'end', align: 'right', offset: 5,
-                    font: { weight: 'bold' },
+                    anchor: 'end', align: 'right', offset: 5, font: { weight: 'bold' },
                     formatter: (v) => v.toLocaleString('id-ID') + " Jt"
                 }
             }
@@ -278,9 +280,7 @@ function drawChart(labels, values, details) {
 
 function resetFilter() { location.reload(); }
 function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
-async function exportToExcel() { 
-    // Logic export excel di sini (menggunakan ExcelJS)
-}
+async function exportToExcel() { /* ExcelJS Logic */ }
 </script>
 </body>
 </html>
