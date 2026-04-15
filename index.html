@@ -347,7 +347,7 @@ function drawChart(labels, values, details) {
                         const isTotal = context.chart.data.labels[context.dataIndex].toString().includes('TOTAL');
                         return { weight: isTotal ? 'bold' : 'normal', size: isTotal ? 13 : 11 };
                     },
-                    formatter: (v) => v.toLocaleString('id-ID'),`jt`
+                    formatter: (v) => v.toLocaleString('id-ID')
                 }
             }
         }
