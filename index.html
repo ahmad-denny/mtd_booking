@@ -7,6 +7,8 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 10px; margin: 0; }
@@ -15,56 +17,89 @@
         .header-title { 
             color: white; 
             background: linear-gradient(90deg, #6a1b9a, #8e24aa); 
-            padding: 10px; 
+            padding: 15px; 
             border-radius: 8px; 
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
-        .header-title h2 { margin: 0; font-size: 18px; font-weight: bold; }
-        .as-of-date { font-size: 11px; opacity: 0.9; display: block; margin-top: 3px; }
+        .header-title h2 { margin: 0; font-size: 20px; font-weight: bold; }
+        .as-of-date { font-size: 13px; opacity: 0.9; display: block; margin-top: 5px; }
         
-        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 15px; border: 1px solid #e9ecef; }
-        select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; outline: none; flex: 1; min-width: 140px; font-size: 13px; }
+        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e9ecef; }
+        select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; flex: 1; min-width: 150px; font-size: 14px; }
         
-        .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; color: white; font-size: 12px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; color: white; font-size: 13px; }
         .reset-btn { background: #28a745; }
         .back-btn { background: #dc3545; }
+        .export-btn { background: #f39c12; }
         .btn:hover { opacity: 0.8; }
 
-        #chart-container { position: relative; width: 100%; margin: 10px auto; min-height: 250px; }
+        #chart-container { position: relative; width: 100%; margin: 20px auto; min-height: 300px; }
 
         /* TABEL DESKTOP */
-        .table-container { margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
+        .table-container { margin-top: 20px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background-color: #6a1b9a; color: white; padding: 10px 5px; border: 1px solid #5e1689; }
-        td { padding: 8px; border: 1px solid #eee; text-align: left; }
+        th { background-color: #6a1b9a; color: white; padding: 12px 8px; border: 1px solid #5e1689; }
+        td { padding: 10px; border: 1px solid #eee; text-align: left; }
         td.clickable { color: #6a1b9a; cursor: pointer; text-decoration: underline; font-weight: 600; }
         .text-right { text-align: right; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        /* RESPONSIVE SMARTPHONE (MOBILE) - SUPER RAPAT */
+/* RESPONSIVE SMARTPHONE (MOBILE) - VERSI SUPER RAPAT & RINGKAS */
         @media screen and (max-width: 768px) {
-            .container { padding: 8px; }
-            .filter-container { flex-direction: column; align-items: stretch; gap: 6px; }
-            select, .btn { width: 100%; }
+            .container { padding: 10px; }
+            .header-title h2 { font-size: 16px; padding: 10px; }
+            .as-of-date { font-size: 11px; margin-top: 3px; }
+            .filter-container { flex-direction: column; align-items: stretch; gap: 6px; padding: 10px; }
+            select, .btn { width: 100%; font-size: 12px; padding: 6px; }
+            #chart-container { min-height: 200px; margin: 10px auto; }
 
+            /* Tabel Menjadi Card Rapat */
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
             
-            tr { border: 1px solid #ddd; margin-bottom: 8px; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+            tr { 
+                border: 1px solid #ddd; 
+                margin-bottom: 10px; 
+                border-radius: 6px; 
+                background: #fff; 
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+                overflow: hidden;
+            }
 
             td { 
-                border: none; border-bottom: 1px solid #f0f0f0; position: relative; 
-                padding: 6px 10px 6px 45% !important; 
-                text-align: right !important; font-size: 12px; line-height: 1.3;
-                min-height: 32px; display: flex; align-items: center; justify-content: flex-end;
+                border: none; 
+                border-bottom: 1px solid #f0f0f0; 
+                position: relative; 
+                /* Padding Super Rapat: 6px atas/bawah */
+                padding: 6px 10px 6px 42% !important; 
+                text-align: right !important; 
+                font-size: 12px;
+                line-height: 1.3;
+                /* HAPUS: display: flex, align-items, justify-content, min-height */
                 box-sizing: border-box;
             }
 
             td:last-child { border-bottom: none; }
+
+            /* Label Menggunakan Absolute Positioning agar Row Tidak Melebar Vertikal */
             td:before { 
-                content: attr(data-label); position: absolute; left: 10px; width: 40%; 
-                font-weight: bold; color: #6a1b9a; text-align: left; white-space: nowrap;
+                content: attr(data-label); 
+                position: absolute; 
+                left: 10px; 
+                width: 38%; 
+                font-weight: bold; 
+                color: #6a1b9a; 
+                text-align: left;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                /* Tengah Vertikal secara Absolut */
+                top: 50%;
+                transform: translateY(-50%);
             }
+            
+            .text-right { font-weight: bold; color: #333; padding-right: 10px !important; }
+            td.clickable { text-decoration: underline; }
         }
     </style>
 </head>
@@ -85,6 +120,7 @@
             <option value="all">Semua Data</option>
         </select>
         <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
+        <button class="btn export-btn" onclick="exportToExcel()">Excel</button>
         <button class="btn back-btn" onclick="openPage()">M-Direct</button>
     </div>
 
@@ -102,6 +138,7 @@
 let myChart = null;
 let tableData = [];
 
+// Pembersih Angka
 function cleanNumber(val) {
     if (typeof val === 'number') return val;
     if (!val) return 0;
@@ -110,6 +147,7 @@ function cleanNumber(val) {
     return parseFloat(cleaned) || 0;
 }
 
+// Pencari Kolom Fleksibel
 function getValue(row, targetName) {
     const key = Object.keys(row).find(k => 
         k.toLowerCase().trim().replace(/\s/g, '') === targetName.toLowerCase().replace(/\s/g, '')
@@ -122,6 +160,7 @@ function formatJutaan(val) {
     return num === 0 ? "-" : Math.round(num / 1000000).toLocaleString('id-ID');
 }
 
+// Fitur Klik Tabel
 function clickToFilter(filterId, value) {
     const filterElem = document.getElementById(filterId);
     filterElem.value = value;
@@ -129,13 +168,17 @@ function clickToFilter(filterId, value) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('dateDisplay').innerText = "as of " + new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+    const today = new Date();
+    const day = today.getDay();
+    today.setDate(today.getDate() - (day === 1 ? 3 : 1));
+    document.getElementById('dateDisplay').innerText = "as of " + today.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+
     fetch('Dataset.json')
         .then(res => res.json())
         .then(data => {
             tableData = data;
             initializeDashboard();
-        }).catch(err => console.error("Error loading JSON:", err));
+        }).catch(err => console.error("Gagal load data:", err));
 });
 
 function initializeDashboard() {
@@ -174,6 +217,7 @@ function filterAndRender() {
         const off = row['Office'];
         const totalVal = getValue(row, 'Total');
         officeMap[off] = (officeMap[off] || 0) + totalVal;
+        
         if(!breakdownMap[off]) breakdownMap[off] = { emas: 0, multiguna: 0, prohajj: 0, kpr: 0, nonCon: 0 };
         breakdownMap[off].emas += getValue(row, 'Emas');
         breakdownMap[off].multiguna += getValue(row, 'MultiGuna');
@@ -186,13 +230,14 @@ function filterAndRender() {
     if (rankVal === 'top10') sortedEntries = sortedEntries.slice(0, 10);
     else if (rankVal === 'bottom10') sortedEntries = sortedEntries.slice(-10).reverse();
 
+    // Data untuk Chart
     let chartLabels = sortedEntries.map(e => e[0]);
     let chartValues = sortedEntries.map(e => Math.round(e[1] / 1000000));
     let chartDetails = sortedEntries.map(e => breakdownMap[e[0]]);
 
-    // HITUNG TOTAL REGION SUMATERA (SELALU ADA)
-    const regTotal = tableData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
-    const regDetails = {
+    // Tambahkan Total Sumatera ke Atas Grafik
+    const sumateraTotalVal = tableData.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
+    const sumateraBreakdown = {
         emas: tableData.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
         multiguna: tableData.reduce((acc, curr) => acc + getValue(curr, 'MultiGuna'), 0),
         prohajj: tableData.reduce((acc, curr) => acc + getValue(curr, 'Prohajj'), 0),
@@ -200,35 +245,24 @@ function filterAndRender() {
         nonCon: tableData.reduce((acc, curr) => acc + getValue(curr, 'Non Consumer'), 0)
     };
     chartLabels.unshift("TOTAL REGION SUMATERA");
-    chartValues.unshift(Math.round(regTotal / 1000000));
-    chartDetails.unshift(regDetails);
-
-    // HITUNG TOTAL MAIN BRANCH (HANYA JIKA FILTER BRANCH AKTIF)
-    if (branchVal && !officeVal) {
-        const branchTotal = filtered.reduce((acc, curr) => acc + getValue(curr, 'Total'), 0);
-        const branchDetails = {
-            emas: filtered.reduce((acc, curr) => acc + getValue(curr, 'Emas'), 0),
-            multiguna: filtered.reduce((acc, curr) => acc + getValue(curr, 'MultiGuna'), 0),
-            prohajj: filtered.reduce((acc, curr) => acc + getValue(curr, 'Prohajj'), 0),
-            kpr: filtered.reduce((acc, curr) => acc + getValue(curr, 'KPR'), 0),
-            nonCon: filtered.reduce((acc, curr) => acc + getValue(curr, 'Non Consumer'), 0)
-        };
-        chartLabels.splice(1, 0, "TOTAL " + branchVal.toUpperCase());
-        chartValues.splice(1, 0, Math.round(branchTotal / 1000000));
-        chartDetails.splice(1, 0, branchDetails);
-    }
+    chartValues.unshift(Math.round(sumateraTotalVal / 1000000));
+    chartDetails.unshift(sumateraBreakdown);
 
     drawChart(chartLabels, chartValues, chartDetails);
 
-    // UPDATE TABEL & KLIK
+    // Update Tabel dengan OnClick
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = filtered.map(row => {
         return `<tr>${Object.entries(row).map(([key, val]) => {
             const isNum = ["TOTAL", "EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER"].includes(key.toUpperCase().trim());
             const display = isNum ? formatJutaan(val) : val;
-            let cls = isNum ? 'text-right' : (key==='Main Branch'||key==='Office'?'clickable':'');
-            let attr = key === 'Main Branch' ? `onclick="clickToFilter('BranchFilter', '${val}')"` : (key === 'Office' ? `onclick="clickToFilter('OfficeFilter', '${val}')"` : '');
-            return `<td class="${cls}" ${attr} data-label="${key}">${display}</td>`;
+            let cls = isNum ? 'text-right' : '';
+            let clickAttr = '';
+            
+            if (key === 'Main Branch') { cls += ' clickable'; clickAttr = `onclick="clickToFilter('BranchFilter', '${val}')"`; }
+            else if (key === 'Office') { cls += ' clickable'; clickAttr = `onclick="clickToFilter('OfficeFilter', '${val}')"`; }
+
+            return `<td class="${cls}" ${clickAttr} data-label="${key}">${display}</td>`;
         }).join('')}</tr>`;
     }).join('');
 }
@@ -236,7 +270,7 @@ function filterAndRender() {
 function drawChart(labels, values, details) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if (myChart) myChart.destroy();
-    document.getElementById('chart-container').style.height = (labels.length * 35 + 80) + "px";
+    document.getElementById('chart-container').style.height = (labels.length * 40 + 80) + "px";
 
     myChart = new Chart(ctx, {
         type: 'bar',
@@ -254,8 +288,8 @@ function drawChart(labels, values, details) {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            layout: { padding: { right: 80 } },
-            scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } },
+            layout: { padding: { right: 100 } },
+            scales: { x: { display: false }, y: { grid: { display: false } } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -263,12 +297,12 @@ function drawChart(labels, values, details) {
                         label: function(ctx) {
                             const d = ctx.dataset.details[ctx.dataIndex];
                             const f = (n) => Math.round(n/1000000).toLocaleString('id-ID') + " Jt";
-                            return [`Total: ${ctx.raw} Jt`, `Emas: ${f(d.emas)}`, `Multiguna: ${f(d.multiguna)}`, `Prohajj: ${f(d.prohajj)}`, `KPR: ${f(d.kpr)}`, `Non Consumer: ${f(d.nonCon)}`];
+                            return [`Total: ${ctx.raw} Jt`, `---`, `Emas: ${f(d.emas)}`, `Multiguna: ${f(d.multiguna)}`, `Prohajj: ${f(d.prohajj)}`, `KPR: ${f(d.kpr)}`, `Non Consumer: ${f(d.nonCon)}`];
                         }
                     }
                 },
                 datalabels: {
-                    anchor: 'end', align: 'right', offset: 5, font: { weight: 'bold', size: 11 },
+                    anchor: 'end', align: 'right', offset: 5, font: { weight: 'bold' },
                     formatter: (v) => v.toLocaleString('id-ID') + " Jt"
                 }
             }
@@ -278,6 +312,7 @@ function drawChart(labels, values, details) {
 
 function resetFilter() { location.reload(); }
 function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
+async function exportToExcel() { /* ExcelJS Logic */ }
 </script>
 </body>
 </html>
