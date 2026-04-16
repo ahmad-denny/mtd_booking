@@ -3,54 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M-Booking Performance Region Sumatera</title>
+    <title>M-Direct Performance Region Sumatera</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 10px; margin: 0; }
-        .container { width: 100%; max-width: 1300px; margin: 0 auto; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08); box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; padding: 10px; margin: 0; }
+        .container { width: 100%; max-width: 600px; margin: 0 auto; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08); box-sizing: border-box; }
         
+        /* Header Ala Video */
         .header-title { 
             color: white; 
-            background: linear-gradient(90deg, #6a1b9a, #8e24aa); 
-            padding: 10px; 
-            border-radius: 8px; 
+            background: linear-gradient(135deg, #6a1b9a, #8e24aa); 
+            padding: 15px; 
+            border-radius: 10px; 
+            text-align: center;
             margin-bottom: 15px;
         }
         .header-title h2 { margin: 0; font-size: 16px; font-weight: bold; }
-        .as-of-date { font-size: 11px; opacity: 0.9; display: block; margin-top: 3px; }
+        .as-of-date { font-size: 12px; opacity: 0.9; display: block; margin-top: 5px; }
         
-        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 15px; border: 1px solid #e9ecef; }
-        select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; outline: none; flex: 1; min-width: 140px; font-size: 13px; }
-        
-        .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; color: white; font-size: 12px; }
-        .excel-btn { background: #1d6f42; }
-        .reset-btn { background: #28a745; }
-        .back-btn { background: #dc3545; }
+        /* Input Search */
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* Filter Grid (2 Kolom) */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        select { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            background-color: #fff;
+            outline: none;
+            width: 100%;
+        }
+
+        /* Button Group Compact */
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .btn { 
+            flex: 1; 
+            padding: 10px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            color: white; 
+            font-size: 12px; 
+            transition: 0.3s;
+            text-align: center;
+        }
+        .reset-btn { background: #28a745; } 
+        .print-btn { background: #9c27b0; } 
+        .back-btn { background: #dc3545; } 
         .btn:hover { opacity: 0.8; }
 
-        #chart-container { position: relative; width: 100%; margin: 10px auto; min-height: 250px; }
+        /* Chart & Table */
+        #chart-container { position: relative; width: 100%; margin: 10px auto; }
+        
+        .table-container { margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; }
+        
+        /* Tampilan Card Tabel untuk Mobile */
+        tr { 
+            display: block; 
+            background: #fff; 
+            border: 1px solid #eee; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        td { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0; 
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 13px;
+            text-align: right;
+        }
+        td:last-child { border-bottom: none; }
+        td:before { 
+            content: attr(data-label); 
+            font-weight: bold; 
+            color: #6a1b9a; 
+            text-align: left;
+            flex: 1;
+        }
+        .text-right { font-weight: bold; }
+        .clickable { color: #6a1b9a; text-decoration: underline; cursor: pointer; }
 
-        .table-container { margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background-color: #6a1b9a; color: white; padding: 10px 5px; border: 1px solid #5e1689; }
-        td { padding: 8px; border: 1px solid #eee; text-align: left; }
-        td.clickable { color: #6a1b9a; cursor: pointer; text-decoration: underline; font-weight: 600; }
-        .text-right { text-align: right; font-weight: bold; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
+        /* Loading & Error */
+        #loader { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+        .spinner { width: 35px; height: 35px; border: 4px solid #f3f3f3; border-top: 4px solid #6a1b9a; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error-msg { color: #dc3545; background: #f8d7da; padding: 12px; border-radius: 8px; font-size: 13px; border: 1px solid #f5c6cb; }
 
-        @media screen and (max-width: 768px) {
-            .filter-container { flex-direction: column; align-items: stretch; }
-            select, .btn { width: 100%; }
-            table, thead, tbody, th, td, tr { display: block; }
-            thead tr { position: absolute; top: -9999px; left: -9999px; }
-            tr { border: 1px solid #ddd; margin-bottom: 8px; border-radius: 6px; background: #fff; }
-            td { border: none; border-bottom: 1px solid #f0f0f0; position: relative; padding: 6px 10px 6px 45% !important; text-align: right !important; font-size: 12px; }
-            td:before { content: attr(data-label); position: absolute; left: 10px; width: 40%; font-weight: bold; color: #6a1b9a; text-align: left; top: 50%; transform: translateY(-50%); }
-            td.indent-label:before { left: 25px; font-weight: normal; color: #555; }
+        @media print {
+            .filter-grid, .button-group, .search-input, .as-of-date { display: none !important; }
+            body { background: white; }
+            .container { box-shadow: none; border: none; }
         }
     </style>
 </head>
@@ -58,28 +129,46 @@
 
 <div class="container">
     <div class="header-title">
-        <h2 id="mainHeader">Booking Performance</h2>
+        <h2 id="mainHeader">M-Direct Performance Sumatera</h2>
         <span id="dateDisplay" class="as-of-date"></span>
     </div>
     
-    <div class="filter-container">
-        <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
-        <select id="OfficeFilter"><option value="">Semua Office</option></select>
+    <input type="text" class="search-input" id="SearchInput" placeholder="Search Name or Code..." onkeyup="render()">
+
+    <div class="filter-grid">
         <select id="RankFilter">
-            <option value="top10" selected>Top 10 Booking</option>
+            <option value="top10">Top 10 Booking</option>
             <option value="bottom10">Bottom 10 Booking</option>
             <option value="all">Semua Data</option>
         </select>
-        <!-- <button class="btn excel-btn" onclick="exportToExcel()">Excel</button> -->
-        <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
-        <button class="btn back-btn" onclick="openPage()">M-Direct</button>
+        <select id="BranchFilter">
+            <option value="">All Branch</option>
+        </select>
+        <select id="OfficeFilter">
+            <option value="">All Office</option>
+        </select>
+        <select id="PositionFilter">
+            <option value="">All Position</option>
+        </select>
     </div>
 
-    <div id="chart-container"><canvas id="myBarChart"></canvas></div>
+    <div class="button-group">
+        <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
+        <button class="btn print-btn" onclick="window.print()">Print</button>
+        <button class="btn back-btn" onclick="openPage()">M-Booking</button>
+    </div>
 
-    <div class="table-container">
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="font-size: 12px; color: #666;">Memuat Data...</p>
+    </div>
+
+    <div id="error-container"></div>
+
+    <div id="chart-container" style="display:none;"><canvas id="myBarChart"></canvas></div>
+
+    <div class="table-container" id="mainTable" style="display:none;">
         <table id="dataTable">
-            <thead><tr id="tableHead"></tr></thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
@@ -116,24 +205,39 @@ document.addEventListener('DOMContentLoaded', () => {
     today.setDate(today.getDate() - diff);
     document.getElementById('dateDisplay').innerText = "as of " + today.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
     
-    fetch('Dataset.json').then(r => r.json()).then(data => {
-        tableData = data;
-        init();
-    });
+    fetch('Dataset.json')
+        .then(r => {
+            if (!r.ok) throw new Error("Dataset.json gagal dimuat.");
+            return r.json();
+        })
+        .then(data => {
+            tableData = data;
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('chart-container').style.display = 'block';
+            document.getElementById('mainTable').style.display = 'block';
+            init();
+        })
+        .catch(err => {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('error-container').innerHTML = `<div class="error-msg">⚠️ ${err.message}</div>`;
+        });
 });
 
 function init() {
     if (tableData.length === 0) return;
-    const cols = Object.keys(tableData[0]);
-    document.getElementById('tableHead').innerHTML = cols.map(c => `<th>${c.trim()}</th>`).join('');
     
     const branches = [...new Set(tableData.map(d => getVal(d, 'Main Branch').trim()))].filter(v => v).sort();
-    document.getElementById('BranchFilter').innerHTML = '<option value="">Semua Main Branch</option>' + 
+    document.getElementById('BranchFilter').innerHTML = '<option value="">All Branch</option>' + 
         branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
+    const positions = [...new Set(tableData.map(d => getVal(d, 'Position') || getVal(d, 'Jabatan')))].filter(v => v).sort();
+    document.getElementById('PositionFilter').innerHTML = '<option value="">All Position</option>' + 
+        positions.map(v => `<option value="${v}">${v}</option>`).join('');
+
     document.getElementById('BranchFilter').addEventListener('change', updateOfficeDropdown);
     document.getElementById('OfficeFilter').addEventListener('change', render);
     document.getElementById('RankFilter').addEventListener('change', render);
+    document.getElementById('PositionFilter').addEventListener('change', render);
     
     updateOfficeDropdown(); 
 }
@@ -145,7 +249,7 @@ function updateOfficeDropdown() {
         .map(d => getVal(d, 'Office').trim())
     )].filter(v => v).sort();
 
-    document.getElementById('OfficeFilter').innerHTML = '<option value="">Semua Office</option>' + 
+    document.getElementById('OfficeFilter').innerHTML = '<option value="">All Office</option>' + 
         offices.map(v => `<option value="${v}">${v}</option>`).join('');
     render();
 }
@@ -154,31 +258,25 @@ function render() {
     const bVal = document.getElementById('BranchFilter').value;
     const oVal = document.getElementById('OfficeFilter').value;
     const rVal = document.getElementById('RankFilter').value;
-    const header = document.getElementById('mainHeader');
+    const pVal = document.getElementById('PositionFilter').value;
+    const qVal = document.getElementById('SearchInput').value.toLowerCase();
 
-    // Update Judul
-    if (rVal === 'top10') header.innerText = "Top 10 Booking Performance";
-    else if (rVal === 'bottom10') header.innerText = "Bottom 10 Booking Performance";
-    else if (bVal && oVal) header.innerText = `Booking Performance ${bVal} - ${oVal}`;
-    else if (bVal) header.innerText = `Booking Performance ${bVal}`;
-    else header.innerText = "Booking Performance Semua Cabang";
-
-    // Filter awal
-    let baseFiltered = tableData.filter(d => {
+    let filtered = tableData.filter(d => {
+        const name = (getVal(d, 'Name') + getVal(d, 'Marketing Name') + getVal(d, 'NIK')).toLowerCase();
         return (!bVal || getVal(d, 'Main Branch').trim() === bVal) && 
-               (!oVal || getVal(d, 'Office').trim() === oVal);
+               (!oVal || getVal(d, 'Office').trim() === oVal) &&
+               (!pVal || (getVal(d, 'Position') || getVal(d, 'Jabatan')) === pVal) &&
+               (!qVal || name.includes(qVal));
     });
 
-    // Sorting Dasar
-    let sortedData = [...baseFiltered].sort((a, b) => cleanNum(getVal(b, 'Total')) - cleanNum(getVal(a, 'Total')));
+    let sortedData = [...filtered].sort((a, b) => cleanNum(getVal(b, 'Total')) - cleanNum(getVal(a, 'Total')));
     
-    // Rank Data untuk Tabel
     let finalTableData = sortedData;
     if (rVal === 'top10') finalTableData = sortedData.slice(0, 10);
     else if (rVal === 'bottom10') finalTableData = sortedData.slice(-10).reverse();
 
-    // Persiapan Chart Data
-    let chartLabels = finalTableData.map(d => getVal(d, 'Office').trim());
+    // Chart Data
+    let chartLabels = finalTableData.map(d => getVal(d, 'Office').trim().substring(0,10));
     let chartValues = finalTableData.map(d => Math.round(cleanNum(getVal(d, 'Total')) / 1000000));
     let chartDets = finalTableData.map(d => ({
         emas: cleanNum(getVal(d, 'Emas')),
@@ -188,49 +286,18 @@ function render() {
         non: cleanNum(getVal(d, 'Non Consumer'))
     }));
 
-    // 1. TAMBAHKAN TOTAL MAIN BRANCH (Jika Branch dipilih)
-    if (bVal && !oVal) {
-        const branchRows = tableData.filter(d => getVal(d, 'Main Branch').trim() === bVal);
-        const branchTotal = branchRows.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Total')), 0);
-        chartLabels.unshift("TOTAL " + bVal.toUpperCase());
-        chartValues.unshift(Math.round(branchTotal / 1000000));
-        chartDets.unshift({
-            emas: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'Emas')), 0),
-            multi: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'MultiGuna')), 0),
-            hajj: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'Prohajj')), 0),
-            kpr: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'KPR')), 0),
-            non: branchRows.reduce((acc, c) => acc + cleanNum(getVal(c, 'Non Consumer')), 0)
-        });
-    }
-
-    // 2. TAMBAHKAN TOTAL REGION (Selalu di posisi paling atas)
-    if (!oVal) {
-        const regTotal = tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Total')), 0);
-        chartLabels.unshift("TOTAL REGION SUMATERA");
-        chartValues.unshift(Math.round(regTotal/1000000));
-        chartDets.unshift({
-            emas: tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Emas')), 0),
-            multi: tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'MultiGuna')), 0),
-            hajj: tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Prohajj')), 0),
-            kpr: tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'KPR')), 0),
-            non: tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Non Consumer')), 0)
-        });
-    }
-
     draw(chartLabels, chartValues, chartDets);
 
-    // Render Tabel
+    // Table Card Render
     document.getElementById('tableBody').innerHTML = finalTableData.map(row => {
         return `<tr>${Object.entries(row).map(([k, v]) => {
             const kc = k.trim().toUpperCase();
-            const isProd = ["EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER"].includes(kc);
-            const isNum = isProd || kc === "TOTAL";
+            const isNum = ["EMAS", "MULTIGUNA", "PROHAJJ", "KPR", "NON CONSUMER", "TOTAL"].includes(kc);
             let cls = isNum ? 'text-right' : '';
-            let attr = '';
-            if(kc === "MAIN BRANCH") { cls+=' clickable'; attr=`onclick="clickToFilter('BranchFilter','${v.trim()}')"`; }
-            if(kc === "OFFICE") { cls+=' clickable'; attr=`onclick="clickToFilter('OfficeFilter','${v.trim()}')"`; }
-            if(isProd) cls += ' indent-label';
-            return `<td class="${cls}" ${attr} data-label="${k.trim()}">${isNum ? formatJt(v) : v}</td>`;
+            if(["MAIN BRANCH", "OFFICE"].includes(kc)) cls += ' clickable';
+            let clickAction = kc === "MAIN BRANCH" ? `onclick="clickToFilter('BranchFilter','${v}')"` : 
+                              kc === "OFFICE" ? `onclick="clickToFilter('OfficeFilter','${v}')"` : "";
+            return `<td class="${cls}" data-label="${k.trim()}" ${clickAction}>${isNum ? formatJt(v) : v}</td>`;
         }).join('')}</tr>`;
     }).join('');
 }
@@ -238,8 +305,7 @@ function render() {
 function draw(labels, data, dets) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if(myChart) myChart.destroy();
-    
-    document.getElementById('chart-container').style.height = (labels.length * 40 + 60) + "px";
+    document.getElementById('chart-container').style.height = (labels.length * 35 + 50) + "px";
     
     myChart = new Chart(ctx, {
         type: 'bar', 
@@ -248,7 +314,7 @@ function draw(labels, data, dets) {
             labels, 
             datasets: [{ 
                 data, 
-                backgroundColor: labels.map(l => l.includes('TOTAL') ? '#2E1A47' : '#36A2EB'), 
+                backgroundColor: '#36A2EB', 
                 details: dets 
             }] 
         },
@@ -256,68 +322,16 @@ function draw(labels, data, dets) {
             indexAxis: 'y', 
             responsive: true, 
             maintainAspectRatio: false,
-            // Menangkap klik di area manapun pada baris tersebut
-            onClick: (e, activeEls) => {
-                let index = -1;
-                if (activeEls.length > 0) {
-                    index = activeEls[0].index;
-                } else {
-                    // Jika klik di luar batang (misal di teks angka/label), cari index berdasarkan koordinat Y
-                    const canvasPosition = Chart.helpers.getRelativePosition(e, myChart);
-                    index = myChart.scales.y.getValueForPixel(canvasPosition.y);
-                }
-
-                if (index >= 0 && index < labels.length) {
-                    // Memaksa tooltip muncul pada index tersebut
-                    myChart.tooltip.setActiveElements([{
-                        datasetIndex: 0,
-                        index: index,
-                    }]);
-                    myChart.update();
-                }
-            },
-            layout: { padding: { right: 100, left: 10 } },
-            scales: { 
-                x: { display: false }, 
-                y: { 
-                    grid: { display: false }, 
-                    ticks: { font: { size: 9 }, autoSkip: false } 
-                } 
-            },
+            scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } },
             plugins: {
                 legend: { display: false },
-                datalabels: { 
-                    anchor: 'end', 
-                    align: 'right', 
-                    offset: 8,
-                    formatter: v => v.toLocaleString('id-ID') + " Jt", 
-                    font: { weight: 'bold', size: 10 },
-                    // Menjadikan kursor pointer saat di atas angka agar user tahu bisa diklik
-                    listeners: {
-                        click: function(context) {
-                            myChart.tooltip.setActiveElements([{
-                                datasetIndex: 0,
-                                index: context.dataIndex,
-                            }]);
-                            myChart.update();
-                        }
-                    }
-                },
+                datalabels: { anchor: 'end', align: 'right', formatter: v => v + " Jt", font: { size: 10, weight: 'bold' } },
                 tooltip: {
-                    enabled: true,
-                    triggerOn: 'click', // Tooltip akan tetap muncul saat diklik
                     callbacks: {
-                        label: function(context) {
-                            const d = context.dataset.details[context.dataIndex];
+                        label: function(c) {
+                            const d = c.dataset.details[c.dataIndex];
                             const f = (n) => Math.round(n/1000000).toLocaleString('id-ID') + " Jt";
-                            return [
-                                `Total: ${context.raw.toLocaleString('id-ID')} Jt`,
-                                `Emas: ${f(d.emas)}`,
-                                `Multiguna: ${f(d.multi)}`,
-                                `Prohajj: ${f(d.hajj)}`,
-                                `KPR: ${f(d.kpr)}`,
-                                `Non Consumer: ${f(d.non)}`
-                            ];
+                            return [`Total: ${c.raw} Jt`, `Emas: ${f(d.emas)}`, `KPR: ${f(d.kpr)}`, `Haji: ${f(d.hajj)}`];
                         }
                     }
                 }
@@ -326,12 +340,6 @@ function draw(labels, data, dets) {
     });
 }
 
-function exportToExcel() {
-    const ws = XLSX.utils.table_to_sheet(document.getElementById('dataTable'));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Booking_Performance");
-    XLSX.writeFile(wb, "Booking_Performance.xlsx");
-}
 function resetFilter() { location.reload(); }
 function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
 </script>
