@@ -23,10 +23,45 @@
         .header-title h2 { margin: 0; font-size: 16px; font-weight: bold; }
         .as-of-date { font-size: 11px; opacity: 0.9; display: block; margin-top: 3px; }
         
-        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 15px; border: 1px solid #e9ecef; }
-        select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; outline: none; flex: 1; min-width: 140px; font-size: 13px; }
+        /* Filter Styles */
+        .filter-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            padding: 12px; 
+            background: #f8f9fa; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid #e9ecef; 
+        }
+
+        .filter-row, .button-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        select { 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            outline: none; 
+            font-size: 13px; 
+            flex: 1;
+            min-width: 0; /* Mencegah elemen meluap di flexbox */
+        }
         
-        .btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; color: white; font-size: 12px; }
+        .btn { 
+            padding: 10px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: 0.3s; 
+            color: white; 
+            font-size: 12px; 
+            flex: 1;
+        }
         .excel-btn { background: #1d6f42; }
         .reset-btn { background: #28a745; }
         .back-btn { background: #dc3545; }
@@ -34,6 +69,7 @@
 
         #chart-container { position: relative; width: 100%; margin: 10px auto; min-height: 250px; }
 
+        /* Table Styles */
         .table-container { margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { background-color: #6a1b9a; color: white; padding: 10px 5px; border: 1px solid #5e1689; }
@@ -42,17 +78,12 @@
         .text-right { text-align: right; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        /* Spinner Loading */
-        #loader { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #6a1b9a; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Error Message */
-        .error-msg { color: #dc3545; background: #f8d7da; padding: 15px; border-radius: 8px; margin: 20px; border: 1px solid #f5c6cb; font-weight: bold; }
-
+        /* Mobile Responsive */
         @media screen and (max-width: 768px) {
-            .filter-container { flex-direction: column; align-items: stretch; }
-            select, .btn { width: 100%; }
+            .header-title h2 { font-size: 14px; }
+            .filter-row, .button-row { gap: 5px; }
+            select, .btn { font-size: 11px; padding: 8px 4px; }
+
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
             tr { border: 1px solid #ddd; margin-bottom: 8px; border-radius: 6px; background: #fff; }
@@ -71,27 +102,26 @@
     </div>
     
     <div class="filter-container">
-        <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
-        <select id="OfficeFilter"><option value="">Semua Office</option></select>
+        <div class="filter-row">
+            <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
+            <select id="OfficeFilter"><option value="">Semua Office</option></select>
+        </div>
+
         <select id="RankFilter">
             <option value="top10" selected>Top 10 Booking</option>
             <option value="bottom10">Bottom 10 Booking</option>
             <option value="all">Semua Data</option>
         </select>
-        <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
-        <button class="btn back-btn" onclick="openPage()">M-Direct</button>
+
+        <div class="button-row">
+            <button class="btn reset-btn" onclick="resetFilter()">Reset</button>
+            <button class="btn back-btn" onclick="openPage()">M-Direct</button>
+        </div>
     </div>
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <p>Memuat Data...</p>
-    </div>
+    <div id="chart-container"><canvas id="myBarChart"></canvas></div>
 
-    <div id="error-container"></div>
-
-    <div id="chart-container" style="display:none;"><canvas id="myBarChart"></canvas></div>
-
-    <div class="table-container" id="mainTable" style="display:none;">
+    <div class="table-container">
         <table id="dataTable">
             <thead><tr id="tableHead"></tr></thead>
             <tbody id="tableBody"></tbody>
@@ -130,33 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
     today.setDate(today.getDate() - diff);
     document.getElementById('dateDisplay').innerText = "as of " + today.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
     
-    const loader = document.getElementById('loader');
-    const errorContainer = document.getElementById('error-container');
-    const chartBox = document.getElementById('chart-container');
-    const tableBox = document.getElementById('mainTable');
-
-    fetch('Dataset.json')
-        .then(r => {
-            if (!r.ok) throw new Error("File 'Dataset.json' tidak ditemukan atau gagal diakses.");
-            return r.json();
-        })
-        .then(data => {
-            tableData = data;
-            loader.style.display = 'none';
-            chartBox.style.display = 'block';
-            tableBox.style.display = 'block';
-            init();
-        })
-        .catch(err => {
-            loader.style.display = 'none';
-            errorContainer.innerHTML = `
-                <div class="error-msg">
-                    ⚠️ Data gagal dimuat: ${err.message}<br>
-                    <small>Silakan periksa koneksi atau file dataset Anda.</small>
-                </div>
-            `;
-            console.error("Fetch Error:", err);
-        });
+    fetch('Dataset.json').then(r => r.json()).then(data => {
+        tableData = data;
+        init();
+    }).catch(err => console.error("Gagal memuat data:", err));
 });
 
 function init() {
@@ -165,7 +172,7 @@ function init() {
     document.getElementById('tableHead').innerHTML = cols.map(c => `<th>${c.trim()}</th>`).join('');
     
     const branches = [...new Set(tableData.map(d => getVal(d, 'Main Branch').trim()))].filter(v => v).sort();
-    document.getElementById('BranchFilter').innerHTML = '<option value="">Semua Main Branch</option>' + 
+    document.getElementById('BranchFilter').innerHTML = '<option value="">Semua MB</option>' + 
         branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
     document.getElementById('BranchFilter').addEventListener('change', updateOfficeDropdown);
@@ -195,9 +202,9 @@ function render() {
 
     if (rVal === 'top10') header.innerText = "Top 10 Booking Performance";
     else if (rVal === 'bottom10') header.innerText = "Bottom 10 Booking Performance";
-    else if (bVal && oVal) header.innerText = `Booking Performance ${bVal} - ${oVal}`;
-    else if (bVal) header.innerText = `Booking Performance ${bVal}`;
-    else header.innerText = "Booking Performance Semua Cabang";
+    else if (bVal && oVal) header.innerText = `${bVal} - ${oVal}`;
+    else if (bVal) header.innerText = `Performance ${bVal}`;
+    else header.innerText = "Booking Performance Sumatera";
 
     let baseFiltered = tableData.filter(d => {
         return (!bVal || getVal(d, 'Main Branch').trim() === bVal) && 
@@ -236,7 +243,7 @@ function render() {
 
     if (!oVal) {
         const regTotal = tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Total')), 0);
-        chartLabels.unshift("TOTAL REGION SUMATERA");
+        chartLabels.unshift("TOTAL REGION");
         chartValues.unshift(Math.round(regTotal/1000000));
         chartDets.unshift({
             emas: tableData.reduce((acc, curr) => acc + cleanNum(getVal(curr, 'Emas')), 0),
@@ -293,16 +300,12 @@ function draw(labels, data, dets) {
                     const canvasPosition = Chart.helpers.getRelativePosition(e, myChart);
                     index = myChart.scales.y.getValueForPixel(canvasPosition.y);
                 }
-
                 if (index >= 0 && index < labels.length) {
-                    myChart.tooltip.setActiveElements([{
-                        datasetIndex: 0,
-                        index: index,
-                    }]);
+                    myChart.tooltip.setActiveElements([{ datasetIndex: 0, index: index }]);
                     myChart.update();
                 }
             },
-            layout: { padding: { right: 100, left: 10 } },
+            layout: { padding: { right: 70, left: 0 } },
             scales: { 
                 x: { display: false }, 
                 y: { 
@@ -315,18 +318,9 @@ function draw(labels, data, dets) {
                 datalabels: { 
                     anchor: 'end', 
                     align: 'right', 
-                    offset: 8,
+                    offset: 4,
                     formatter: v => v.toLocaleString('id-ID') + " Jt", 
-                    font: { weight: 'bold', size: 10 },
-                    listeners: {
-                        click: function(context) {
-                            myChart.tooltip.setActiveElements([{
-                                datasetIndex: 0,
-                                index: context.dataIndex,
-                            }]);
-                            myChart.update();
-                        }
-                    }
+                    font: { weight: 'bold', size: 9 }
                 },
                 tooltip: {
                     enabled: true,
@@ -351,12 +345,6 @@ function draw(labels, data, dets) {
     });
 }
 
-function exportToExcel() {
-    const ws = XLSX.utils.table_to_sheet(document.getElementById('dataTable'));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Booking_Performance");
-    XLSX.writeFile(wb, "Booking_Performance.xlsx");
-}
 function resetFilter() { location.reload(); }
 function openPage() { window.location.href = 'https://m-direct.vercel.app/'; }
 </script>
