@@ -103,14 +103,14 @@
     
     <div class="filter-container">
         <div class="filter-row">
-            <select id="BranchFilter"><option value="">Semua Main Branch</option></select>
-            <select id="OfficeFilter"><option value="">Semua Office</option></select>
+            <select id="BranchFilter"><option value="">All Main Branch</option></select>
+            <select id="OfficeFilter"><option value="">All Office</option></select>
         </div>
 
         <select id="RankFilter">
-            <option value="top10" selected>Top 10 Booking</option>
-            <option value="bottom10">Bottom 10 Booking</option>
-            <option value="all">Semua Data</option>
+            <option value="top10" selected>Top 10 Branch</option>
+            <option value="bottom10">Bottom 10 Branch</option>
+            <option value="all">All</option>
         </select>
 
         <div class="button-row">
@@ -172,7 +172,7 @@ function init() {
     document.getElementById('tableHead').innerHTML = cols.map(c => `<th>${c.trim()}</th>`).join('');
     
     const branches = [...new Set(tableData.map(d => getVal(d, 'Main Branch').trim()))].filter(v => v).sort();
-    document.getElementById('BranchFilter').innerHTML = '<option value="">Semua MB</option>' + 
+    document.getElementById('BranchFilter').innerHTML = '<option value="">All Main Branch</option>' + 
         branches.map(v => `<option value="${v}">${v}</option>`).join('');
     
     document.getElementById('BranchFilter').addEventListener('change', updateOfficeDropdown);
