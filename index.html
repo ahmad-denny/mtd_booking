@@ -238,9 +238,12 @@ function render() {
 function draw(labels, data, dets) {
     const ctx = document.getElementById('myBarChart').getContext('2d');
     if(myChart) myChart.destroy();
+    
     document.getElementById('chart-container').style.height = (labels.length * 40 + 60) + "px";
+    
     myChart = new Chart(ctx, {
-        type: 'bar', plugins: [ChartDataLabels],
+        type: 'bar', 
+        plugins: [ChartDataLabels],
         data: { 
             labels, 
             datasets: [{ 
@@ -250,21 +253,65 @@ function draw(labels, data, dets) {
             }] 
         },
         options: {
-            indexAxis: 'y', responsive: true, maintainAspectRatio: false, layout: { 
-                // TAMBAHKAN PADDING KANAN LEBIH BESAR AGAR ANGKA TIDAK TERPOTONG
-                padding: { right: 100, left: 10 } 
+            indexAxis: 'y', 
+            responsive: true, 
+            maintainAspectRatio: false,
+            // Menangkap klik di area manapun pada baris tersebut
+            onClick: (e, activeEls) => {
+                let index = -1;
+                if (activeEls.length > 0) {
+                    index = activeEls[0].index;
+                } else {
+                    // Jika klik di luar batang (misal di teks angka/label), cari index berdasarkan koordinat Y
+                    const canvasPosition = Chart.helpers.getRelativePosition(e, myChart);
+                    index = myChart.scales.y.getValueForPixel(canvasPosition.y);
+                }
+
+                if (index >= 0 && index < labels.length) {
+                    // Memaksa tooltip muncul pada index tersebut
+                    myChart.tooltip.setActiveElements([{
+                        datasetIndex: 0,
+                        index: index,
+                    }]);
+                    myChart.update();
+                }
             },
-            scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } },
+            layout: { padding: { right: 100, left: 10 } },
+            scales: { 
+                x: { display: false }, 
+                y: { 
+                    grid: { display: false }, 
+                    ticks: { font: { size: 9 }, autoSkip: false } 
+                } 
+            },
             plugins: {
                 legend: { display: false },
-                datalabels: { anchor:'end', align:'right', formatter: v => v.toLocaleString('id-ID') + " Jt", font: { weight:'bold', size: 10 } },
+                datalabels: { 
+                    anchor: 'end', 
+                    align: 'right', 
+                    offset: 8,
+                    formatter: v => v.toLocaleString('id-ID') + " Jt", 
+                    font: { weight: 'bold', size: 10 },
+                    // Menjadikan kursor pointer saat di atas angka agar user tahu bisa diklik
+                    listeners: {
+                        click: function(context) {
+                            myChart.tooltip.setActiveElements([{
+                                datasetIndex: 0,
+                                index: context.dataIndex,
+                            }]);
+                            myChart.update();
+                        }
+                    }
+                },
                 tooltip: {
+                    enabled: true,
+                    triggerOn: 'click', // Tooltip akan tetap muncul saat diklik
                     callbacks: {
                         label: function(context) {
                             const d = context.dataset.details[context.dataIndex];
                             const f = (n) => Math.round(n/1000000).toLocaleString('id-ID') + " Jt";
                             return [
-                                `Total: ${context.raw} Jt`,
+                                `Total: ${context.raw.toLocaleString('id-ID')} Jt`,
                                 `Emas: ${f(d.emas)}`,
                                 `Multiguna: ${f(d.multi)}`,
                                 `Prohajj: ${f(d.hajj)}`,
